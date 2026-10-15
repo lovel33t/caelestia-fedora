@@ -144,7 +144,10 @@
       "provides": [
         "Material Symbols Rounded"
       ],
-      "note": "Pinned by commit, not a release asset: the repo publishes NO release assets, but the variable fonts are committed under variablefont/. caelestia-shell defaults to the 'Material Symbols Rounded' family (appearanceconfig.hpp); without it every icon renders as its literal ligature text."
+      "note": "Pinned by commit, not a release asset: the repo publishes NO release assets, but the variable fonts are committed under variablefont/. caelestia-shell defaults to the 'Material Symbols Rounded' family (appearanceconfig.hpp); without it every icon renders as its literal ligature text. The full repo is ~24 GB and we need one 15 MB TTF, so it is fetched blobless+sparse; the pinned commit still guarantees the bytes.",
+      "sparse_paths": [
+        "variablefont"
+      ]
     }
   ],
   "tarball_sources": [

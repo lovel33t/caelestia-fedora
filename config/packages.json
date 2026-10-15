@@ -186,22 +186,6 @@
       "note": "runtime dep of gpu-screen-recorder; Fedora renamed ffmpeg-libs -> ffmpeg-free"
     },
     {
-      "pkg": "fish",
-      "note": "caelestia-shell lists fish as a runtime dependency; the dots' foot/quickfish setup expects it."
-    },
-    {
-      "pkg": "pwvucontrol",
-      "note": "general.apps.audio in shell.json; bound to Ctrl+Alt+V by the dots."
-    },
-    {
-      "pkg": "bluez-utils",
-      "note": "provides bluetoothctl, which Quickshell's Bluetooth service shells out to."
-    },
-    {
-      "pkg": "papirus-folders",
-      "note": "upstream manifest gtk component; without it folder icons stay generic."
-    },
-    {
       "pkg": "hyprpolkitagent",
       "note": "polkit-gnome no longer exists in Fedora 44. The dots exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1, so the image ships a shim that execs this agent."
     },
@@ -326,7 +310,8 @@
       "libXdamage-devel",
       "pulseaudio-libs-devel",
       "libva-devel",
-      "libcap-devel"
+      "libcap-devel",
+      "extra-cmake-modules"
     ],
     "_no_dart": "Dart is deliberately NOT installed: no Dart SDK is packaged for Fedora 44 and bootstrapping one from source is a multi-hour chicken-and-egg build. dart-sass is consumed as the official Sass-team release binary pinned against GitHub's first-party sha256 digest."
   }

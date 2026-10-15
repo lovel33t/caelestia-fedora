@@ -10,11 +10,20 @@ dnf -y install --setopt=install_weak_deps=False git gcc gcc-c++ clang cmake ninj
 # --- pinned fetch ------------------------------------------------------------
 # Every source is pinned to an exact revision from deps.lock.json. A tarball
 # whose digest does not match aborts the build.
-git_pin() {  # url sha dir
-  git clone --quiet --filter=blob:none "$1" "$SRC/$3"
-  git -C "$SRC/$3" checkout --quiet "$2"
-  got=$(git -C "$SRC/$3" rev-parse HEAD)
-  [ "$got" = "$2" ] || { echo "!!! $3 pinned to $2 but got $got"; exit 1; }
+git_pin() {  # url sha dir [sparse-path ...]
+  local url="$1" sha="$2" dir="$3"; shift 3
+  if [ "$#" -gt 0 ]; then
+    # Blobless + sparse: material-design-icons is ~24 GB and we need one TTF.
+    git clone --quiet --filter=blob:none --no-checkout "$url" "$SRC/$dir"
+    git -C "$SRC/$dir" sparse-checkout init --cone
+    git -C "$SRC/$dir" sparse-checkout set "$@"
+    git -C "$SRC/$dir" fetch --quiet --depth 1 origin "$sha"
+  else
+    git clone --quiet --filter=blob:none "$url" "$SRC/$dir"
+  fi
+  git -C "$SRC/$dir" checkout --quiet "$sha"
+  got=$(git -C "$SRC/$dir" rev-parse HEAD)
+  [ "$got" = "$sha" ] || { echo "!!! $dir pinned to $sha but got $got"; exit 1; }
 }
 tar_pin() {  # url sha256 dir
   curl -sSfL -o "$SRC/$3.tar.gz" "$1"
@@ -27,10 +36,12 @@ tar_pin() {  # url sha256 dir
 git_pin "https://github.com/caelestia-dots/cli" "ff8cae38bd4bea8d1827a0a6971d6763d58c570e" caelestia-cli
 git_pin "https://github.com/caelestia-dots/caelestia" "f4bb062cc3c617f0fa16525a365097c9e4684d83" caelestia-dots
 git_pin "https://github.com/caelestia-dots/shell" "a3a8fe59aba2c0048ab02dc817748678f96076ff" caelestia-shell
+git_pin "https://github.com/Bali10050/darkly" "6fc65177b22983d54aa965ea3617f8c9d658f442" darkly
 git_pin "https://github.com/jesseduffield/lazygit" "4c2ce238a925c41b6caee6dcf722984ff081774b" lazygit
 git_pin "https://github.com/LukashonakV/cava" "f03278ef9e5e7948fb206453d2f02758f8db216c" libcava
 git_pin "https://github.com/soramanew/m3shapes" "8a6fe8961749887d677700b6508e0c9249968b7e" m3shapes
-git_pin "https://github.com/google/material-design-icons" "49d4db35df873165d6bd6ba09b063c7dafbac2f4" material-symbols
+git_pin "https://github.com/google/material-design-icons" "49d4db35df873165d6bd6ba09b063c7dafbac2f4" material-symbols variablefont
+git_pin "https://github.com/kossLAN/qtengine" "1a8b9c5fd7ab695c71b1ac236953491088e152fb" qtengine
 git_pin "https://git.outfoxxed.me/quickshell/quickshell" "4f508be500dea6e5732cc3d50382a0048b17e7b1" quickshell
 git_pin "https://github.com/googlefonts/rubik" "e337a5f69a9bea30e58d05bd40184d79cc099628" rubik
 tar_pin "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz" "ae598e9401e2846aa3ee364513715de0490b844a4b54f0768991f45f23aa8369" cascadia-code-nerd
@@ -111,6 +122,22 @@ meson setup --prefix=/usr build
 meson compile -C build
 DESTDIR= meson install -C build
 
+# --- 7b. qtengine + darkly (cmake, not packaged for Fedora) -----------------
+# The image strips wayblue's QT_STYLE_OVERRIDE=adwaita-dark so that caelestia's
+# qtengine theming is what actually themes Qt apps. Neither qtengine nor darkly
+# exists in any enabled Fedora 44 repo, so both are built from source.
+echo "################ qtengine ################"
+cd "$SRC/qtengine"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j "$(nproc)"
+DESTDIR= cmake --install build
+
+echo "################ darkly ################"
+cd "$SRC/darkly"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j "$(nproc)"
+DESTDIR= cmake --install build
+
 # --- 8. rubik font (not packaged on Fedora) ----------------------------------
 # caelestia-shell uses Rubik for the clock and workspaces.
 install -d /usr/share/fonts/rubik
@@ -170,6 +197,11 @@ for a in \
     /usr/share/fonts/nerd \
     /usr/share/caelestia/dots ; do
   stage_path "$a"
+done
+
+# qtengine and darkly install into these trees; stage whichever ones exist.
+for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes ; do
+  [ -e "$a" ] && stage_path "$a"
 done
 
 echo "STAGED:"

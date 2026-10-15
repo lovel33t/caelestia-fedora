@@ -42,7 +42,23 @@ printf 'Defaults:%s !requiretty\n%s ALL=(ALL) NOPASSWD: ALL\n' "$USERNAME" "$USE
 chmod 0440 "/etc/sudoers.d/90-$USERNAME"
 
 # zsh as the default shell for anyone created later by the display manager.
+# It must also be listed in /etc/shells or the display manager treats it as a
+# non-login shell and the session falls back to bash.
+grep -qxF "$LOGIN_SHELL" /etc/shells 2>/dev/null || \
+    printf '%s\n' "$LOGIN_SHELL" >> /etc/shells
 chsh -l "$USERNAME" -s "$LOGIN_SHELL" 2>/dev/null || true
+
+# polkit-gnome no longer exists in Fedora 44, but the dots exec its agent by
+# that exact path. Give them hyprpolkitagent under the name they expect.
+if [ -x /usr/bin/hyprpolkitagent ] && [ ! -e /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 ]; then
+    install -d /usr/lib/polkit-gnome
+    ln -sf /usr/bin/hyprpolkitagent /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+fi
+
+# Bibata is not packaged for Fedora 44, so default to Breeze, which breeze-icon-
+# theme ships in both light and dark. The dots also call `hyprctl setcursor`
+# from variables.lua; the gsettings keys below cover GTK/Qt apps.
+CURSOR_THEME="${CAELESTIA_CURSOR:-breeze}"
 
 # --- provisioning that must also run for a PRE-EXISTING account -------------
 # The original version did all of this inside the useradd branch, so an account
@@ -108,4 +124,22 @@ fi
 
 mkdir -p "$(dirname "$MARKER")"
 touch "$MARKER"
+
+# --- per-user session setup (run as the user so dconf lands in their DB) ------
+if [ -d "$HOME_DIR" ]; then
+    su -l "$USERNAME" -c "gsettings set org.gnome.desktop.interface cursor-theme '$CURSOR_THEME'" 2>/dev/null || true
+    su -l "$USERNAME" -c "gsettings set org.gnome.desktop.interface cursor-size 24" 2>/dev/null || true
+    # GTK4 / libadwaita read this one instead.
+    su -l "$USERNAME" -c "gsettings set org.gnome.desktop.interface legacy-cursor-scaling false" 2>/dev/null || true
+    cat > "$HOME_DIR/.config/gtkrc-3.0" <<EOF
+gtk-cursor-theme-name="$CURSOR_THEME"
+gtk-cursor-size=24
+EOF
+    cat > "$HOME_DIR/.config/gtkrc-4.0" <<EOF
+gtk-cursor-theme-name="$CURSOR_THEME"
+gtk-cursor-size=24
+EOF
+    chown -R "$USERNAME:$USERNAME" "$HOME_DIR/.config/gtkrc-3.0" "$HOME_DIR/.config/gtkrc-4.0" 2>/dev/null || true
+fi
+
 echo "==> provisioning complete"

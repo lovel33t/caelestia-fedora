@@ -510,6 +510,7 @@ def cmd_fetch(args) -> int:
     SRC.mkdir(parents=True, exist_ok=True)
 
     step("Cloning git sources at pinned SHAs")
+    src_by_name = {s["name"]: s for s in src["git_sources"]}
     for name, meta in lock["git"].items():
         if "error" in meta:
             err(f"{name}: {meta['error']}")
@@ -517,7 +518,26 @@ def cmd_fetch(args) -> int:
         url, sha = meta["url"], meta["sha"]
         check_origin(url, allow)
         dest = SRC / name
-        if (dest / ".git").exists():
+        sparse = (src_by_name.get(name) or {}).get("sparse_paths")
+        if sparse:
+            # Some upstreams are enormous - material-design-icons is ~24 GB and
+            # we need exactly one 15 MB TTF out of it. A blobless, sparse
+            # checkout keeps the pinned-commit guarantee while fetching a
+            # fraction of the tree.
+            if (dest / ".git").exists():
+                run(["git", "fetch", "--filter=blob:none", "--depth", "1", "origin", sha],
+                    cwd=dest)
+            else:
+                dest.mkdir(parents=True, exist_ok=True)
+                run(["git", "init", "-q"], cwd=dest)
+                run(["git", "remote", "add", "origin", url], cwd=dest, check=False)
+                run(["git", "config", "core.sparseCheckout", "true"], cwd=dest)
+                run(["git", "sparse-checkout", "init", "--cone"], cwd=dest, check=False)
+                run(["git", "sparse-checkout", "set", *sparse], cwd=dest, check=False)
+                run(["git", "fetch", "--filter=blob:none", "--depth", "1", "origin", sha],
+                    cwd=dest)
+            run(["git", "checkout", "-q", sha], cwd=dest)
+        elif (dest / ".git").exists():
             cur = run(["git", "rev-parse", "HEAD"], cwd=dest, capture=True).stdout.strip()
             if cur == sha:
                 ok(f"{name:22s} already at {sha[:12]}")
@@ -681,12 +701,31 @@ if [ -d "$SRC/lazygit" ]; then
 fi
 
 # --- gpu-screen-recorder (meson) --------------------------------------------
-if [ -d "$SRC/gpu-screen-recorder/extracted" ]; then
-  cd "$SRC/gpu-screen-recorder/extracted"
-  meson setup --prefix=/usr build >/dev/null \
-    && meson compile -C build >/dev/null \
-    && DESTDIR= meson install -C build >/dev/null
+# Not optional: a silent skip here would ship an image with no screen recorder
+# and still exit 0. Fail loudly if the pinned tarball did not extract.
+if [ ! -d "$SRC/gpu-screen-recorder/extracted" ]; then
+  echo "!!! gpu-screen-recorder source missing at $SRC/gpu-screen-recorder/extracted"; exit 1
 fi
+cd "$SRC/gpu-screen-recorder/extracted"
+meson setup --prefix=/usr build
+meson compile -C build
+DESTDIR= meson install -C build
+
+# --- qtengine + darkly (cmake, not packaged for Fedora) ---------------------
+# The image strips wayblue's QT_STYLE_OVERRIDE=adwaita-dark so that caelestia's
+# qtengine theming is what themes Qt apps. Neither package exists in any
+# enabled Fedora 44 repo, so both are built from source.
+if [ ! -d "$SRC/qtengine" ]; then echo "!!! qtengine source missing"; exit 1; fi
+cd "$SRC/qtengine"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j "$(nproc)"
+DESTDIR= cmake --install build
+
+if [ ! -d "$SRC/darkly" ]; then echo "!!! darkly source missing"; exit 1; fi
+cd "$SRC/darkly"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j "$(nproc)"
+DESTDIR= cmake --install build
 
 # --- Rubik font -------------------------------------------------------------
 # caelestia-shell uses Rubik for the clock and workspaces. Not packaged in
@@ -908,6 +947,9 @@ COPY --from=builder /usr/share/fonts/rubik /usr/share/fonts/rubik
 COPY --from=builder /usr/share/fonts/material-symbols /usr/share/fonts/material-symbols
 COPY --from=builder /usr/share/fonts/nerd /usr/share/fonts/nerd
 COPY --from=builder /usr/share/caelestia/dots /usr/share/caelestia/dots
+# qtengine + darkly: not packaged for Fedora 44, built from source.
+COPY --from=builder /usr/lib64/qt6/plugins/platformthemes/ /usr/lib64/qt6/plugins/platformthemes/
+COPY --from=builder /usr/share/themes/ /usr/share/themes/
 RUN fc-cache -f
 
 # Caelestia CLI: reinstall the wheel so pip resolves deps for this image
@@ -1020,11 +1062,20 @@ dnf -y install --setopt=install_weak_deps=False __BUILD_DEPS__
 # --- pinned fetch ------------------------------------------------------------
 # Every source is pinned to an exact revision from deps.lock.json. A tarball
 # whose digest does not match aborts the build.
-git_pin() {  # url sha dir
-  git clone --quiet --filter=blob:none "$1" "$SRC/$3"
-  git -C "$SRC/$3" checkout --quiet "$2"
-  got=$(git -C "$SRC/$3" rev-parse HEAD)
-  [ "$got" = "$2" ] || { echo "!!! $3 pinned to $2 but got $got"; exit 1; }
+git_pin() {  # url sha dir [sparse-path ...]
+  local url="$1" sha="$2" dir="$3"; shift 3
+  if [ "$#" -gt 0 ]; then
+    # Blobless + sparse: material-design-icons is ~24 GB and we need one TTF.
+    git clone --quiet --filter=blob:none --no-checkout "$url" "$SRC/$dir"
+    git -C "$SRC/$dir" sparse-checkout init --cone
+    git -C "$SRC/$dir" sparse-checkout set "$@"
+    git -C "$SRC/$dir" fetch --quiet --depth 1 origin "$sha"
+  else
+    git clone --quiet --filter=blob:none "$url" "$SRC/$dir"
+  fi
+  git -C "$SRC/$dir" checkout --quiet "$sha"
+  got=$(git -C "$SRC/$dir" rev-parse HEAD)
+  [ "$got" = "$sha" ] || { echo "!!! $dir pinned to $sha but got $got"; exit 1; }
 }
 tar_pin() {  # url sha256 dir
   curl -sSfL -o "$SRC/$3.tar.gz" "$1"
@@ -1109,6 +1160,22 @@ meson setup --prefix=/usr build
 meson compile -C build
 DESTDIR= meson install -C build
 
+# --- 7b. qtengine + darkly (cmake, not packaged for Fedora) -----------------
+# The image strips wayblue's QT_STYLE_OVERRIDE=adwaita-dark so that caelestia's
+# qtengine theming is what actually themes Qt apps. Neither qtengine nor darkly
+# exists in any enabled Fedora 44 repo, so both are built from source.
+echo "################ qtengine ################"
+cd "$SRC/qtengine"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j "$(nproc)"
+DESTDIR= cmake --install build
+
+echo "################ darkly ################"
+cd "$SRC/darkly"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j "$(nproc)"
+DESTDIR= cmake --install build
+
 # --- 8. rubik font (not packaged on Fedora) ----------------------------------
 # caelestia-shell uses Rubik for the clock and workspaces.
 install -d /usr/share/fonts/rubik
@@ -1170,25 +1237,33 @@ for a in \
   stage_path "$a"
 done
 
+# qtengine and darkly install into these trees; stage whichever ones exist.
+for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes ; do
+  [ -e "$a" ] && stage_path "$a"
+done
+
 echo "STAGED:"
 find "$OUT" -maxdepth 3 -mindepth 1 | sort
 echo "ALL BUILDS OK"
 """
 
 
-def render_stage_script(lock: dict, deps: str) -> str:
+def render_stage_script(lock: dict, deps: str, src_by_name: dict) -> str:
     """Fill the stage script template with the locked revisions."""
-    # qtengine and darkly are resolved and audited but never compiled: they are
-    # not runtime artefacts of the image (the Containerfile copies neither).
-    # caelestia-dots IS needed - it is shipped at /usr/share/caelestia/dots so
-    # firstboot can deploy it.
-    skip = {"qtengine", "darkly"}
+    # Everything in sources.json is now compiled: qtengine and darkly are not
+    # packaged for Fedora 44 (verified: neither appears in any enabled repo),
+    # and the image strips wayblue's QT_STYLE_OVERRIDE specifically so that
+    # caelestia's qtengine theming takes effect. caelestia-dots ships at
+    # /usr/share/caelestia/dots so firstboot can deploy it.
+    skip: set[str] = set()
 
     fetch = []
     for name, meta in sorted(lock.get("git", {}).items()):
         if name in skip:
             continue
-        fetch.append(f'git_pin "{meta["url"]}" "{meta["sha"]}" {name}')
+        sparse = (src_by_name.get(name) or {}).get("sparse_paths") or []
+        extra = (" " + " ".join(sparse)) if sparse else ""
+        fetch.append(f'git_pin "{meta["url"]}" "{meta["sha"]}" {name}{extra}')
     for name, meta in sorted(lock.get("tarball", {}).items()):
         fetch.append(f'tar_pin "{meta["url"]}" "{meta["sha256"]}" {name}')
 
@@ -1339,7 +1414,8 @@ modules:
     # recipe references it by name from files/scripts/.
     deps = " ".join(pkg["build_deps"]["packages"]) + " ca-certificates"
     stage = ROOT / "files" / "scripts" / "build-from-source.sh"
-    stage.write_text(render_stage_script(lock, deps))
+    stage.write_text(render_stage_script(
+        lock, deps, {s["name"]: s for s in load("sources.json")["git_sources"]}))
     chk = subprocess.run(["bash", "-n", str(stage)], capture_output=True, text=True)
     if chk.returncode != 0:
         die(f"generated {stage.name} is not valid bash:\n{chk.stderr}")

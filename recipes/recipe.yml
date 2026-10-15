@@ -85,10 +85,6 @@ modules:
         - xfce-polkit
         - polkit
         - ffmpeg-free
-        - fish
-        - pwvucontrol
-        - bluez-utils
-        - papirus-folders
         - hyprpolkitagent
         - geoclue2
 
