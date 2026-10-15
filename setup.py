@@ -195,6 +195,10 @@ jobs:
           recipe: recipe.yml
           registry_token: __GITHUB_TOKEN__
           pr_event_number: ${{ github.event.number }}
+          # REQUIRED input: the action aborts in seconds if it is absent.
+          # Value is the cosign private key (repo secret SIGNING_SECRET);
+          # cosign.pub is committed at the repo root for verification.
+          cosign_private_key: ${{ secrets.SIGNING_SECRET }}
 """
 
 BLUEPRINT = """\

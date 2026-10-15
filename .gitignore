@@ -20,3 +20,10 @@ README.md
 
 # Dropped by the BlueBuild CLI when rendering a recipe locally
 .bluebuild-scripts_*
+
+# Never commit signing keys. cosign.pub IS committed (verifiers need it);
+# the private half must never enter the repo.
+cosign.key
+cosign.private
+
+/.bluebuild-scripts_*

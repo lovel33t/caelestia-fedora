@@ -1,0 +1,19 @@
+# Caelestia input access.
+#
+# Two separate needs:
+#   1. evdev read access - libinput, ydotool and the caelestia shell read
+#      /dev/input/event* directly.
+#   2. uinput write access - ydotool (and anything else that synthesises key
+#      events) needs to create a virtual input device.
+#
+# The groups are created by setup-evdev-groups.sh at image build time and
+# granted to the primary user by firstboot-setup.sh on first boot. The uinput
+# kernel module itself is loaded via /etc/modules-load.d/caelestia-uinput.conf,
+# which apply-wayblue-overrides.sh writes.
+
+# evdev nodes -> group input, no access for anyone else.
+KERNEL=="event*", SUBSYSTEM=="input", GROUP="input", MODE="0660"
+
+# virtual input device -> group uinput. uinput has no packaged group on
+# Fedora, so setup-evdev-groups.sh creates it explicitly.
+KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="uinput", MODE="0660"

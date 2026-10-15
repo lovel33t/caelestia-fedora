@@ -42,3 +42,8 @@ jobs:
           recipe: recipe.yml
           registry_token: ${{ secrets.GITHUB_TOKEN }}
           pr_event_number: ${{ github.event.number }}
+          # REQUIRED input: the action aborts in seconds if it is absent,
+          # which is why both CI runs failed in ~35s. Value is the cosign
+          # private key (repo secret SIGNING_SECRET); cosign.pub is committed
+          # at the repo root so the image signature can be verified.
+          cosign_private_key: ${{ secrets.SIGNING_SECRET }}

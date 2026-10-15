@@ -135,4 +135,4 @@ RUN chmod 0755 /usr/lib/caelestia-scripts/*.sh \
  && /usr/lib/caelestia-scripts/apply-wayblue-overrides.sh \
  && rm -rf /var/cache/dnf
 
-LABEL org.caelestia.build.date=2026-10-15T19:05:50Z
+LABEL org.caelestia.build.date=2026-10-15T19:12:35Z
