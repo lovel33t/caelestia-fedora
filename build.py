@@ -1194,8 +1194,16 @@ stages:
     from: {BUILDER_BASE}
     modules:
       - type: script
-        scripts:
-          - build-from-source.sh
+        # BlueBuild 0.9.37 emits ARG CONFIG_DIRECTORY="/tmp/config" for the
+        # builder stage but "/tmp/files" for the main image, and never mounts
+        # /tmp/config in a stage. The script module therefore looks for
+        # /tmp/config/scripts, finds nothing, and aborts with "Cannot declare
+        # scripts to run if /tmp/config/scripts doesn't exist". The module
+        # only raises that when `scripts` is non-empty, and /tmp/files *is*
+        # mounted (it carries the repo's files/), so invoking the script from
+        # there via a snippet works around it.
+        snippets:
+          - bash /tmp/files/scripts/build-from-source.sh
 
 modules:
   # 1. Package set
