@@ -16,7 +16,7 @@ FROM ${BASE_IMAGE}
 
 LABEL org.bluebuild.image.name="caelestia-fedora" \
       org.bluebuild.image.description="Caelestia shell + CLI on wayblue hyprland-nvidia-open" \
-      org.caelestia.build.sources=ff8cae38bd4b,f4bb062cc3c6,a3a8fe59aba2,6fc65177b229,88c339a90742,f03278ef9e5e,8a6fe8961749,1a8b9c5fd7ab,4f508be500de,e337a5f69a9b
+      org.caelestia.build.sources=ff8cae38bd4b,f4bb062cc3c6,a3a8fe59aba2,6fc65177b229,a0fa1becdb18,f03278ef9e5e,8a6fe8961749,1a8b9c5fd7ab,4f508be500de,e337a5f69a9b
 
 # --- runtime repositories ----------------------------------------------------
 RUN set -eux; \
@@ -135,4 +135,4 @@ RUN chmod 0755 /usr/lib/caelestia-scripts/*.sh \
  && /usr/lib/caelestia-scripts/apply-wayblue-overrides.sh \
  && rm -rf /var/cache/dnf
 
-LABEL org.caelestia.build.date=2026-10-15T01:03:45Z
+LABEL org.caelestia.build.date=2026-10-15T19:05:50Z

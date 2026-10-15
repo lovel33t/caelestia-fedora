@@ -17,3 +17,6 @@ README.md
 #   blueprint.yml        - BlueBuild config (written by setup.py phase1)
 #   .github/workflows/   - the CI workflow (written by setup.py phase1)
 # If you change the registry/repo name, re-run ./setup.py phase1 and re-push.
+
+# Dropped by the BlueBuild CLI when rendering a recipe locally
+.bluebuild-scripts_*
