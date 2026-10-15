@@ -5,7 +5,7 @@ SRC=/src; OUT=/out
 mkdir -p "$SRC" "$OUT"
 
 echo "################ build deps ################"
-dnf -y install --setopt=install_weak_deps=False git gcc gcc-c++ clang cmake ninja-build pkgconf-pkg-config meson autoconf automake libtool patch golang qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtimageformats qt6-qtsvg wayland-devel wayland-protocols-devel libxcb-devel vulkan-headers spirv-tools cli11-devel libqalculate-devel pipewire-devel aubio-devel lm_sensors-devel fftw-devel jemalloc-devel libdrm-devel mesa-libgbm-devel polkit-devel libunwind-devel libdwarf-devel binutils-devel pam-devel xkeyboard-config iniparser-devel fontconfig lua python3-devel python3-pip ffmpeg-free-devel libX11-devel libXcomposite-devel libXrandr-devel libXfixes-devel libXdamage-devel pulseaudio-libs-devel libva-devel libcap-devel ca-certificates
+dnf -y install --setopt=install_weak_deps=False git gcc gcc-c++ clang cmake ninja-build pkgconf-pkg-config meson autoconf automake libtool patch golang qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtimageformats qt6-qtsvg wayland-devel wayland-protocols-devel libxcb-devel vulkan-headers spirv-tools cli11-devel libqalculate-devel pipewire-devel aubio-devel lm_sensors-devel fftw-devel jemalloc-devel libdrm-devel mesa-libgbm-devel polkit-devel libunwind-devel libdwarf-devel binutils-devel pam-devel xkeyboard-config iniparser-devel fontconfig lua python3-devel python3-pip ffmpeg-free-devel libX11-devel libXcomposite-devel libXrandr-devel libXfixes-devel libXdamage-devel pulseaudio-libs-devel libva-devel libcap-devel extra-cmake-modules ca-certificates
 
 # --- pinned fetch ------------------------------------------------------------
 # Every source is pinned to an exact revision from deps.lock.json. A tarball
@@ -30,7 +30,10 @@ tar_pin() {  # url sha256 dir
   echo "$2  $SRC/$3.tar.gz" | sha256sum -c - \
     || { echo "!!! $3 sha256 MISMATCH"; exit 1; }
   mkdir -p "$SRC/$3/extracted"
-  tar -xzf "$SRC/$3.tar.gz" -C "$SRC/$3/extracted"
+  # No -z: GNU tar sniffs the magic bytes on extract. The nerd-font releases are
+  # .tar.xz while dart-sass and gpu-screen-recorder are .tar.gz, and forcing -z
+  # made every xz archive fail with "not in gzip format".
+  tar -xf "$SRC/$3.tar.gz" -C "$SRC/$3/extracted"
 }
 
 git_pin "https://github.com/caelestia-dots/cli" "ff8cae38bd4bea8d1827a0a6971d6763d58c570e" caelestia-cli

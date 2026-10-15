@@ -1082,7 +1082,10 @@ tar_pin() {  # url sha256 dir
   echo "$2  $SRC/$3.tar.gz" | sha256sum -c - \
     || { echo "!!! $3 sha256 MISMATCH"; exit 1; }
   mkdir -p "$SRC/$3/extracted"
-  tar -xzf "$SRC/$3.tar.gz" -C "$SRC/$3/extracted"
+  # No -z: GNU tar sniffs the magic bytes on extract. The nerd-font releases are
+  # .tar.xz while dart-sass and gpu-screen-recorder are .tar.gz, and forcing -z
+  # made every xz archive fail with "not in gzip format".
+  tar -xf "$SRC/$3.tar.gz" -C "$SRC/$3/extracted"
 }
 
 __FETCH__
