@@ -186,9 +186,15 @@ jobs:
           password: __GITHUB_TOKEN__
 
       - name: Build the image with BlueBuild
-        uses: bluebuild/bluebuild-action@v1
+        # NOTE: the action is blue-build/github-action. The old
+        # `bluebuild/bluebuild-action` does not exist (404), so the workflow
+        # died at this step. IMAGE_NAME was also not an input of the action;
+        # the target registry is derived from `registry_token`.
+        uses: blue-build/github-action@v1
         with:
-          IMAGE_NAME: ghcr.io/__REPO__/${{ IMAGE_NAME }}
+          recipe: recipe.yml
+          registry_token: __GITHUB_TOKEN__
+          pr_event_number: ${{ github.event.number }}
 """
 
 BLUEPRINT = """\

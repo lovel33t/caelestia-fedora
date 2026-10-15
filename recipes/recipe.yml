@@ -58,7 +58,9 @@ modules:
         - google-noto-emoji-fonts
         - google-noto-fonts-common
         - google-noto-sans-cjk-fonts
-        - power-profiles-daemon
+        - libqalculate
+        - aubio
+        - jemalloc
         - xfce-polkit
         - polkit
         - ffmpeg-free
@@ -69,11 +71,14 @@ modules:
       - apply-wayblue-overrides.sh
 
   # 3. caelestia wrapper, udev rules, zsh defaults, skel seeding
+  # `source` is relative to the repo's files/ directory (BlueBuild docs), so
+  # `usr` means files/usr. The old `system/usr` pointed at a path that does
+  # not exist and silently copied nothing.
   - type: files
     files:
-      - source: system/usr
+      - source: usr
         destination: /usr
-      - source: system/etc
+      - source: etc
         destination: /etc
 
   # 4. Keep caelestia shell + CLI on PATH after deploy

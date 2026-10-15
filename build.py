@@ -421,7 +421,7 @@ def cmd_audit(args) -> int:
     with tempfile.TemporaryDirectory() as td:
         sp = Path(td) / "audit.sh"
         sp.write_text(script.read_text())
-        cp = run(["podman", "run", "--rm", "--network=host", "-v", f"{sp}:/audit.sh:ro",
+        cp = run(["podman", "run", "--rm", "--network=host", "-v", f"{sp}:/audit.sh:ro,z",
                   f"fedora:{rel}", "bash", "-c",
                   "dnf install -y curl >/dev/null 2>&1; bash /audit.sh " + " ".join(names)],
                  capture=True, timeout=3600)
@@ -722,10 +722,13 @@ def cmd_build(args) -> int:
     cmd = [
         "podman", "run", "--name", BUILT_CONTAINER, "--network=host",
         "-e", "SKIP_DEPS=1",
-        "-v", f"{SRC}:/src:ro",
-        "-v", f"{bs}:/build.sh:ro",
-        "-v", f"{ex}:/opt/build-extras.sh:ro",
-        "-v", f"{BUILD / '.fc'}:/fc",
+        # `:z` relabels the host side to container_file_t. Without it every
+        # mount here fails with EACCES on an SELinux-enforcing host: the files
+        # are user_tmp_t/user_home_t and the container runs as container_t.
+        "-v", f"{SRC}:/src:ro,z",
+        "-v", f"{bs}:/build.sh:ro,z",
+        "-v", f"{ex}:/opt/build-extras.sh:ro,z",
+        "-v", f"{BUILD / '.fc'}:/fc,z",
         BUILDER_IMAGE if args.builder_exists else f"fedora:{load('packages.json')['fedora_release']}",
         "bash", "/build.sh",
     ]
@@ -995,11 +998,14 @@ modules:
       - apply-wayblue-overrides.sh
 
   # 3. caelestia wrapper, udev rules, zsh defaults, skel seeding
+  # `source` is relative to the repo's files/ directory (BlueBuild docs), so
+  # `usr` means files/usr. The old `system/usr` pointed at a path that does
+  # not exist and silently copied nothing.
   - type: files
     files:
-      - source: system/usr
+      - source: usr
         destination: /usr
-      - source: system/etc
+      - source: etc
         destination: /etc
 
   # 4. Keep caelestia shell + CLI on PATH after deploy
@@ -1046,8 +1052,8 @@ def cmd_test(args) -> int:
     dots = SRC / "caelestia-dots"
     t = subprocess.run(
         ["podman", "run", "--rm",
-         "-v", f"{vs}:/verify.sh:ro",
-         *(["-v", f"{dots}:/dots:ro"] if dots.is_dir() else []),
+         "-v", f"{vs}:/verify.sh:ro,z",
+         *(["-v", f"{dots}:/dots:ro,z"] if dots.is_dir() else []),
          img, "bash", "/verify.sh"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=900)
     print(t.stdout)
@@ -1078,9 +1084,9 @@ def cmd_validate(args) -> int:
     info(f"image: {img}")
 
     cmd = ["podman", "run", "--rm", "-i", "--network=host",
-           "-v", f"{vs}:/vc.sh:ro"]
+           "-v", f"{vs}:/vc.sh:ro,z"]
     if dots.is_dir():
-        cmd += ["-v", f"{dots}:/dots:ro"]
+        cmd += ["-v", f"{dots}:/dots:ro,z"]
     else:
         warn(f"pinned dots not found at {dots}; parity diff will be skipped")
     cmd += [img, "bash", "/vc.sh"]
@@ -1120,6 +1126,16 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    # `all` chains every stage over a single shared Namespace, so a stage that
+    # reads a flag declared on its *own* subparser would otherwise hit
+    # AttributeError. These parent-level defaults make every Namespace
+    # complete; a subparser's own default still wins for its own flag.
+    p.set_defaults(verify=False, strict=False, builder_exists=False,
+                   timeout=7200, tag="caelestia-fedora:dev",
+                   image_tag="caelestia-fedora:dev",
+                   image=BUILT_IMAGE, builder_image=BUILT_IMAGE,
+                   registry="ghcr.io/USER/caelestia-builder")
 
     def add(name, fn, help_):
         sp = sub.add_parser(name, help=help_)
