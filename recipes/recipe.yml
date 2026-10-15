@@ -6,8 +6,21 @@ description: Caelestia shell + CLI on wayblue hyprland-nvidia-open
 base-image: ghcr.io/wayblueorg/hyprland-nvidia-open
 image-version: latest
 
+# The from-source components (quickshell, the caelestia shell + plugins, the
+# CLI, libcava, m3shapes, lazygit, gpu-screen-recorder, dart-sass, rubik) are
+# compiled in a separate stage and copied in, so the shipped image never
+# carries the toolchain. Without this stage the image was built from wayblue
+# alone and contained none of them.
+stages:
+  - name: caelestia-builder
+    from: registry.fedoraproject.org/fedora:44
+    modules:
+      - type: script
+        scripts:
+          - build-from-source.sh
+
 modules:
-  # 1. Package set (from-source components come from the builder stage)
+  # 1. Package set
   - type: dnf
     repos:
       copr:
@@ -70,7 +83,39 @@ modules:
     scripts:
       - apply-wayblue-overrides.sh
 
-  # 3. caelestia wrapper, udev rules, zsh defaults, skel seeding
+  # 3. Runtime artefacts from the builder stage. /out mirrors the final
+  #    filesystem, so these four recursive copies replace the ~20 individual
+  #    COPY --from=builder lines the generated Containerfile used.
+  - type: copy
+    from: caelestia-builder
+    src: /out/usr
+    dest: /usr
+  - type: copy
+    from: caelestia-builder
+    src: /out/opt
+    dest: /opt
+  - type: copy
+    from: caelestia-builder
+    src: /out/etc
+    dest: /etc
+  - type: copy
+    from: caelestia-builder
+    src: /out/wheel
+    dest: /tmp/caelestia-wheel
+
+  # 4. Fixups that cannot be expressed as a copy: the `qs` alias, the sass
+  #    launcher on PATH, and installing the CLI wheel with its dependencies.
+  - type: script
+    snippets:
+      - ln -sf quickshell /usr/bin/qs
+      - mkdir -p /var/usrlocal/bin && ln -sf /opt/dart-sass/sass /var/usrlocal/bin/sass
+      - >-
+        dnf install -y python3-pip >/dev/null 2>&1 &&
+        pip3 install --no-cache-dir /tmp/caelestia-wheel/*.whl >/dev/null 2>&1 &&
+        rm -rf /tmp/caelestia-wheel &&
+        python3 -c "import caelestia"
+
+  # 5. caelestia wrapper, udev rules, zsh defaults, skel seeding
   # `source` is relative to the repo's files/ directory (BlueBuild docs), so
   # `usr` means files/usr. The old `system/usr` pointed at a path that does
   # not exist and silently copied nothing.
@@ -81,7 +126,7 @@ modules:
       - source: etc
         destination: /etc
 
-  # 4. Keep caelestia shell + CLI on PATH after deploy
+  # 6. Keep caelestia shell + CLI on PATH after deploy
   - type: systemd
     user:
       enabled:
