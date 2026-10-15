@@ -1,0 +1,19 @@
+# Caelestia user service - starts the desktop shell for the Hyprland session.
+[Unit]
+Description=Caelestia Shell
+Documentation=https://github.com/caelestia-dots/shell
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/caelestia-shell
+ExecReload=/usr/bin/caelestia-shell kill
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=5s
+Environment=QT_QPA_PLATFORM=wayland
+Slice=session.slice
+
+[Install]
+WantedBy=graphical-session.target

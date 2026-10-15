@@ -1,0 +1,8 @@
+# Minimal blueprint: the image is defined by the Containerfile at the repo
+# root, which build.py generates and we have already validated locally.
+blueprint:
+  name: caelestia-fedora
+  description: Caelestia shell + CLI on wayblue hyprland-nvidia-open
+  packages:
+    - git
+    - jq

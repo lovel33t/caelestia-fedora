@@ -1,0 +1,9 @@
+# Keep the build context small: the Containerfile only needs the runtime
+# files, not the multi-gigabyte source checkouts in build/src.
+build/
+dist/
+.git/
+__pycache__/
+*.pyc
+Containerfile
+README.md

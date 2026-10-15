@@ -1,0 +1,136 @@
+{
+  "_comment": "Source manifest. Versions are NOT pinned here - build.py resolves each source to its latest available revision at build time and records it in build/deps.lock.json. Use 'build.py resolve --verify' to assert nothing drifted since the lock was written.",
+
+  "git_sources": [
+    {
+      "name": "caelestia-shell",
+      "url": "https://github.com/caelestia-dots/shell",
+      "license": "GPL-3.0-only",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "cmake",
+      "provides": ["caelestia-shell"],
+      "requires": ["quickshell", "m3shapes", "libcava"]
+    },
+    {
+      "name": "caelestia-cli",
+      "url": "https://github.com/caelestia-dots/cli",
+      "license": "GPL-3.0-only",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "python-wheel",
+      "provides": ["caelestia-cli"],
+      "runtime_requires": ["dart-sass", "gpu-screen-recorder", "cliphist", "fuzzel", "wl-clipboard", "grim", "slurp", "swappy", "libnotify", "dconf"]
+    },
+    {
+      "name": "caelestia-dots",
+      "url": "https://github.com/caelestia-dots/caelestia",
+      "license": "GPL-3.0-only",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "config-only",
+      "provides": ["caelestia-dots"]
+    },
+    {
+      "name": "quickshell",
+      "url": "https://git.outfoxxed.me/quickshell/quickshell",
+      "license": "LGPL-3.0-only",
+      "fork_of": "https://github.com/quickshell-mirror/quickshell",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "cmake",
+      "cmake_args": ["-DVENDOR_CPPTRACE=ON"],
+      "provides": ["quickshell"],
+      "replaces_fedora_pkg": true,
+      "note": "Fedora ships quickshell 0.2.1; caelestia-shell requires the git line (Quickshell.Bluetooth / Services.UPower / SystemTray). Verified building 0.3.2."
+    },
+    {
+      "name": "m3shapes",
+      "url": "https://github.com/soramanew/m3shapes",
+      "license": "Apache-2.0",
+      "version_from": "git rev-list --count HEAD | r(count).gitrev",
+      "build": "cmake",
+      "provides": ["qt6-m3shapes"],
+      "note": "AUR name is qt6-m3shapes-git. Provides the Material 3 Expressive shape QML module used by the shell."
+    },
+    {
+      "name": "libcava",
+      "url": "https://github.com/LukashonakV/cava",
+      "license": "MIT",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "meson",
+      "meson_args": ["-Dbuild_target=lib", "-Dcava_font=false"],
+      "provides": ["libcava"],
+      "note": "IMPORTANT: this is LukashonakV's fork, NOT karlstav/cava. Upstream cava ships no libcava.pc and no include/cava/cavacore.h. caelestia's plugin links the cavacore C API."
+    },
+    {
+      "name": "qtengine",
+      "url": "https://github.com/kossLAN/qtengine",
+      "license": "BSD-2-Clause",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "cmake",
+      "provides": ["qtengine"]
+    },
+    {
+      "name": "darkly",
+      "url": "https://github.com/Bali10050/darkly",
+      "license": "GPL-2.0-or-later",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "cmake",
+      "provides": ["darkly"],
+      "note": "AUR 'darkly-bin' ships a prebuilt ARCH .pkg.zst which cannot be used on Fedora; we build from source instead."
+    },
+    {
+      "name": "lazygit",
+      "url": "https://github.com/jesseduffield/lazygit",
+      "license": "MIT",
+      "version_from": "git describe --tags --abbrev=0",
+      "build": "go",
+      "provides": ["lazygit"]
+    },
+    {
+      "name": "rubik",
+      "url": "https://github.com/googlefonts/rubik",
+      "license": "OFL-1.1",
+      "version_from": "git rev-list --count HEAD | r(count).gitrev",
+      "build": "font-from-git",
+      "provides": ["rubik"],
+      "fonts": ["fonts/variable/Rubik[wght].ttf", "fonts/variable/Rubik-Italic[wght].ttf"],
+      "note": "Sourced from git rather than a release zip so it can be pinned by SHA like every other component. caelestia uses Rubik for the clock and workspaces (GoogleSansFlex cannot render some unicode symbols). Rubik is NOT packaged in any Fedora repo."
+    }
+  ],
+
+  "tarball_sources": [
+    {
+      "name": "dart-sass",
+      "type": "github_release",
+      "repo": "sass/dart-sass",
+      "asset_pattern": "dart-sass-*-linux-x64.tar.gz",
+      "license": "MIT",
+      "build": "prebuilt-sass",
+      "provides": ["sass"],
+      "note": "EXEMPTION, but stronger than gpu-screen-recorder's: GitHub publishes a first-party sha256 `digest` for every release asset, and build.py enforces it. We take the official Sass-team binary rather than bootstrapping the Dart SDK from source (a multi-hour, chicken-and-egg build) because no Dart SDK is packaged for Fedora 44. This is the `sass` binary caelestia's theme.py shells out to when compiling discord.scss."
+    },
+    {
+      "name": "gpu-screen-recorder",
+      "url": "https://dec05eba.com/snapshot/gpu-screen-recorder.git.5.12.3.tar.gz",
+      "version": "5.12.3",
+      "license": "GPL-3.0-only",
+      "build": "meson",
+      "provides": ["gpu-screen-recorder"],
+      "integrity": {
+        "_note": "sha512 published by the AUR maintainer; verified byte-for-byte on 2026-10-14. sha256 recorded by build.py on first resolution.",
+        "sha512": "5153169c9c756f48d3e6b1f4baea66aa6bdce9d97c147ca6c8bedb8960561bda8d816c88003de72a11a6720c1f991145984d6a186e7554266c76aec77fc4c892"
+      },
+      "exemptions": [
+        "Cannot be pinned to a git SHA: upstream moved off GitHub to a self-hosted Forgejo (git.dec05eba.com) whose git smart-http endpoint returns 404. Only the signed-by-version snapshot tarball is reachable. Verified with the maintainer's sha512 plus an independently recorded sha256."
+      ],
+      "note": "Required by `caelestia record`. Without it the screen-recorder keybind is dead."
+    }
+  ],
+
+  "origin_allowlist": [
+    "github.com",
+    "git.outfoxxed.me",
+    "dec05eba.com",
+    "copr.fedorainfracloud.org",
+    "ghcr.io",
+    "quay.io"
+  ]
+}

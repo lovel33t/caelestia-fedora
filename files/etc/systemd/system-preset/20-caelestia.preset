@@ -1,0 +1,2 @@
+# Ensure the groups Caelestia's udev rules rely on exist before login.
+enable caelestia-firstboot.service

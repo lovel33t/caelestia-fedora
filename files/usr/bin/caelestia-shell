@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# caelestia-shell - launch the Caelestia Quickshell shell on Fedora Atomic.
+#
+# Upstream builds this wrapper in its Nix expression.  It is required on Fedora
+# because caelestia's Paths.qml hardcodes /usr/lib/caelestia while Fedora's
+# x86_64 libdir is /usr/lib64, so CAELESTIA_LIB_DIR must be set explicitly or
+# the `extras` helpers (e.g. `version`) are never found.
+
+set -euo pipefail
+
+readonly QSCONFDIR="/etc/xdg/quickshell/caelestia"
+readonly EXTRAS_LIB="/usr/lib64/caelestia"
+
+export CAELESTIA_LIB_DIR="${CAELESTIA_LIB_DIR:-$EXTRAS_LIB}"
+
+# Hypr.qml falls back to /usr/share/X11/xkb/rules/base.lst which is already the
+# correct path on Fedora; only set it when xkeyboard-config lives elsewhere.
+if [ -z "${CAELESTIA_XKB_RULES_PATH:-}" ]; then
+    for cand in /usr/share/X11/xkb/rules/base.lst /usr/share/xkeyboard-config-2/rules/base.lst; do
+        [ -f "$cand" ] && export CAELESTIA_XKB_RULES_PATH="$cand" && break
+    done
+fi
+
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+
+exec /usr/bin/qs -p "$QSCONFDIR" "$@"
