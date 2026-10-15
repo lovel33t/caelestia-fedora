@@ -1,90 +1,248 @@
 {
   "_comment": "Fedora package map for the caelestia Hyprland image. Every entry was verified against a live Fedora 44 container on 2026-10-14. `build.py audit` re-verifies every one of these before the image is built.",
-
   "base_image": "ghcr.io/wayblueorg/hyprland-nvidia-open:latest",
   "fedora_release": "44",
-
   "cops": [
-    { "owner": "atim", "project": "starship", "for": "starship 1.24.2-1.fc44 (verified)" },
-    { "owner": "craftidore", "project": "wayblueorg-hyprland", "for": "already enabled by the wayblue base image (hyprlock/hypridle/hyprpaper/hyprpicker/xdg-desktop-portal-hyprland)" }
+    {
+      "owner": "atim",
+      "project": "starship",
+      "for": "starship 1.24.2-1.fc44 (verified)"
+    },
+    {
+      "owner": "craftidore",
+      "project": "wayblueorg-hyprland",
+      "for": "already enabled by the wayblue base image (hyprlock/hypridle/hyprpaper/hyprpicker/xdg-desktop-portal-hyprland)"
+    }
   ],
-
   "packages": [
-    { "pkg": "zsh", "note": "requested as the login shell" },
-    { "pkg": "bash" },
-
-    { "pkg": "Thunar", "note": "NOT in the wayblue base image despite its recipe listing it; caelestia's default 'thunar' component themes ~/.config/gtk-3.0/thunar.css, so it must be present" },
-    { "pkg": "thunar-archive-plugin" },
-    { "pkg": "thunar-volman" },
-
-    { "pkg": "fastfetch", "note": "VANILLA - caelestia's fastfetch config is deliberately NOT deployed" },
-
-    { "pkg": "hyprpicker", "note": "from the wayblue COPR" },
-    { "pkg": "wl-clipboard" },
-    { "pkg": "cliphist" },
-    { "pkg": "fuzzel" },
-    { "pkg": "grim" },
-    { "pkg": "slurp" },
-    { "pkg": "swappy" },
-    { "pkg": "dconf" },
-    { "pkg": "libnotify" },
-    { "pkg": "xdg-user-dirs" },
-    { "pkg": "xdg-desktop-portal-gtk" },
-
-    { "pkg": "ddcutil" },
-    { "pkg": "brightnessctl" },
-    { "pkg": "lm_sensors" },
-    { "pkg": "trash-cli" },
-    { "pkg": "ydotool", "note": "needs /dev/uinput + evdev - see udev rules" },
-
-    { "pkg": "adw-gtk3-theme", "note": "Fedora name for Arch's 'adw-gtk-theme'" },
-    { "pkg": "papirus-icon-theme" },
-    { "pkg": "gnome-keyring" },
-
-    { "pkg": "btop" },
-    { "pkg": "micro" },
-    { "pkg": "foot" },
-    { "pkg": "eza" },
-    { "pkg": "zoxide" },
-    { "pkg": "direnv" },
-    { "pkg": "starship", "copr": "atim/starship" },
-    { "pkg": "lazygit", "from_source": true },
-
-    { "pkg": "curl" },
-    { "pkg": "git" },
-    { "pkg": "jq" },
-    { "pkg": "bat" },
-    { "pkg": "ripgrep" },
-
-    { "pkg": "jetbrains-mono-fonts", "note": "Fedora equivalent of ttf-jetbrains-mono-nerd (not nerd-patched)" },
-    { "pkg": "cascadia-code-fonts", "note": "Fedora equivalent of ttf-cascadia-code-nerd (not nerd-patched)" },
-    { "pkg": "google-noto-emoji-fonts", "note": "Fedora equivalent of noto-fonts-emoji" },
-    { "pkg": "google-noto-fonts-common", "note": "Fedora equivalent of noto-fonts" },
-    { "pkg": "google-noto-sans-cjk-fonts", "note": "Fedora equivalent of noto-fonts-cjk (note: 'sans-cjk')" },
-    { "pkg": "rubik", "from_source": true, "note": "shell clock/workspaces font; absent from Fedora" },
-
-    { "pkg": "libqalculate", "note": "RUNTIME lib for the caelestia plugins (libqalculate.so.23). Was only a build dep - plugins failed to load without it." },
-    { "pkg": "aubio", "note": "RUNTIME lib for the caelestia services plugin (libaubio.so.5). Was only a build dep." },
-    { "pkg": "jemalloc", "note": "RUNTIME lib for the quickshell binary (libjemalloc.so.2). Was only a build dep." },
-    { "pkg": "xfce-polkit", "note": "polkit auth agent; substitutes Arch's polkit-gnome which does not exist on Fedora" },
-    { "pkg": "polkit" },
-
-    { "pkg": "ffmpeg-free", "note": "runtime dep of gpu-screen-recorder; Fedora renamed ffmpeg-libs -> ffmpeg-free" }
+    {
+      "pkg": "zsh",
+      "note": "requested as the login shell"
+    },
+    {
+      "pkg": "bash"
+    },
+    {
+      "pkg": "Thunar",
+      "note": "NOT in the wayblue base image despite its recipe listing it; caelestia's default 'thunar' component themes ~/.config/gtk-3.0/thunar.css, so it must be present"
+    },
+    {
+      "pkg": "thunar-archive-plugin"
+    },
+    {
+      "pkg": "thunar-volman"
+    },
+    {
+      "pkg": "fastfetch",
+      "note": "VANILLA - caelestia's fastfetch config is deliberately NOT deployed"
+    },
+    {
+      "pkg": "hyprpicker",
+      "note": "from the wayblue COPR"
+    },
+    {
+      "pkg": "wl-clipboard"
+    },
+    {
+      "pkg": "cliphist"
+    },
+    {
+      "pkg": "fuzzel"
+    },
+    {
+      "pkg": "grim"
+    },
+    {
+      "pkg": "slurp"
+    },
+    {
+      "pkg": "swappy"
+    },
+    {
+      "pkg": "dconf"
+    },
+    {
+      "pkg": "libnotify"
+    },
+    {
+      "pkg": "xdg-user-dirs"
+    },
+    {
+      "pkg": "xdg-desktop-portal-gtk"
+    },
+    {
+      "pkg": "ddcutil"
+    },
+    {
+      "pkg": "brightnessctl"
+    },
+    {
+      "pkg": "lm_sensors"
+    },
+    {
+      "pkg": "trash-cli"
+    },
+    {
+      "pkg": "ydotool",
+      "note": "needs /dev/uinput + evdev - see udev rules"
+    },
+    {
+      "pkg": "adw-gtk3-theme",
+      "note": "Fedora name for Arch's 'adw-gtk-theme'"
+    },
+    {
+      "pkg": "papirus-icon-theme"
+    },
+    {
+      "pkg": "gnome-keyring"
+    },
+    {
+      "pkg": "btop"
+    },
+    {
+      "pkg": "micro"
+    },
+    {
+      "pkg": "foot"
+    },
+    {
+      "pkg": "eza"
+    },
+    {
+      "pkg": "zoxide"
+    },
+    {
+      "pkg": "direnv"
+    },
+    {
+      "pkg": "starship",
+      "copr": "atim/starship"
+    },
+    {
+      "pkg": "lazygit",
+      "from_source": true
+    },
+    {
+      "pkg": "curl"
+    },
+    {
+      "pkg": "git"
+    },
+    {
+      "pkg": "jq"
+    },
+    {
+      "pkg": "bat"
+    },
+    {
+      "pkg": "ripgrep"
+    },
+    {
+      "pkg": "jetbrains-mono-fonts",
+      "note": "Fedora equivalent of ttf-jetbrains-mono-nerd (not nerd-patched)"
+    },
+    {
+      "pkg": "cascadia-code-fonts",
+      "note": "Fedora equivalent of ttf-cascadia-code-nerd (not nerd-patched)"
+    },
+    {
+      "pkg": "google-noto-emoji-fonts",
+      "note": "Fedora equivalent of noto-fonts-emoji"
+    },
+    {
+      "pkg": "google-noto-fonts-common",
+      "note": "Fedora equivalent of noto-fonts"
+    },
+    {
+      "pkg": "google-noto-sans-cjk-fonts",
+      "note": "Fedora equivalent of noto-fonts-cjk (note: 'sans-cjk')"
+    },
+    {
+      "pkg": "rubik",
+      "from_source": true,
+      "note": "shell clock/workspaces font; absent from Fedora"
+    },
+    {
+      "pkg": "libqalculate",
+      "note": "RUNTIME lib for the caelestia plugins (libqalculate.so.23). Was only a build dep - plugins failed to load without it."
+    },
+    {
+      "pkg": "aubio",
+      "note": "RUNTIME lib for the caelestia services plugin (libaubio.so.5). Was only a build dep."
+    },
+    {
+      "pkg": "jemalloc",
+      "note": "RUNTIME lib for the quickshell binary (libjemalloc.so.2). Was only a build dep."
+    },
+    {
+      "pkg": "xfce-polkit",
+      "note": "polkit auth agent; substitutes Arch's polkit-gnome which does not exist on Fedora"
+    },
+    {
+      "pkg": "polkit"
+    },
+    {
+      "pkg": "ffmpeg-free",
+      "note": "runtime dep of gpu-screen-recorder; Fedora renamed ffmpeg-libs -> ffmpeg-free"
+    },
+    {
+      "pkg": "fish",
+      "note": "caelestia-shell lists fish as a runtime dependency; the dots' foot/quickfish setup expects it."
+    },
+    {
+      "pkg": "pwvucontrol",
+      "note": "general.apps.audio in shell.json; bound to Ctrl+Alt+V by the dots."
+    },
+    {
+      "pkg": "bluez-utils",
+      "note": "provides bluetoothctl, which Quickshell's Bluetooth service shells out to."
+    },
+    {
+      "pkg": "papirus-folders",
+      "note": "upstream manifest gtk component; without it folder icons stay generic."
+    },
+    {
+      "pkg": "hyprpolkitagent",
+      "note": "polkit-gnome no longer exists in Fedora 44. The dots exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1, so the image ships a shim that execs this agent."
+    },
+    {
+      "pkg": "geoclue2",
+      "note": "the dots exec /usr/lib/geoclue-2.0/demos/agent for location services."
+    }
   ],
-
   "already_in_base": [
-    "hyprland-git", "hyprlock", "hypridle", "hyprpaper", "hyprland-guiutils",
-    "xdg-desktop-portal-hyprland", "waybar", "kitty", "sddm", "polkit",
-    "wireplumber", "pipewire", "NetworkManager", "bluez", "bluez-tools",
-    "fzf", "wl-clipboard", "grim", "slurp", "dunst", "wofi",
-    "pavucontrol", "playerctl", "powerstat", "just", "distrobox"
+    "hyprland-git",
+    "hyprlock",
+    "hypridle",
+    "hyprpaper",
+    "hyprland-guiutils",
+    "xdg-desktop-portal-hyprland",
+    "waybar",
+    "kitty",
+    "sddm",
+    "polkit",
+    "wireplumber",
+    "pipewire",
+    "NetworkManager",
+    "bluez",
+    "bluez-tools",
+    "fzf",
+    "wl-clipboard",
+    "grim",
+    "slurp",
+    "dunst",
+    "wofi",
+    "pavucontrol",
+    "playerctl",
+    "powerstat",
+    "just",
+    "distrobox"
   ],
   "not_in_base_by_design": {
     "rofi-wayland": "listed in wayblue's recipe but not actually installed; caelestia uses fuzzel + its own launcher, so this is not needed",
     "thunar": "wayblue's recipe lists it but it is absent from the published image - we install it ourselves because caelestia themes it",
     "power-profiles-daemon": "DELIBERATELY NOT INSTALLED. The wayblue base already ships tuned-ppd, which declares 'Conflicts: power-profiles-daemon' because both provide the ppd-service unit. The shell does not need the power-profiles-daemon binary: it uses Quickshell's PowerProfiles QML module, which talks the org.freedesktop.PowerProfiles D-Bus interface that tuned-ppd also implements. Installing both makes the dnf transaction fail outright."
   },
-
   "remove_from_base": [
     {
       "path": "/etc/xdg/waybar/config.jsonc",
@@ -103,32 +261,72 @@
       "why": "wayblue's Hyprland plugin lua; caelestia ships hypr/hyprland.lua. User config at ~/.config/hypr wins regardless, so this is only removed to avoid confusion."
     }
   ],
-
   "env_overrides": [
     {
       "file": "/etc/environment",
-      "unset": ["QT_STYLE_OVERRIDE", "GTK_THEME"],
+      "unset": [
+        "QT_STYLE_OVERRIDE",
+        "GTK_THEME"
+      ],
       "why": "wayblue sets QT_STYLE_OVERRIDE=adwaita-dark and GTK_THEME=Adwaita:dark. QT_STYLE_OVERRIDE forces the Adwaita Qt style and SILENTLY BYPASSES caelestia's qtengine theming entirely."
     }
   ],
-
   "build_deps": {
     "_note": "only needed inside the builder container, never shipped in the image. Mirrors builder/Containerfile.",
     "packages": [
-      "git", "gcc", "gcc-c++", "clang", "cmake", "ninja-build", "pkgconf-pkg-config",
-      "meson", "autoconf", "automake", "libtool", "patch", "golang",
-      "qt6-qtbase-devel", "qt6-qtbase-private-devel", "qt6-qtdeclarative-devel",
-      "qt6-qtshadertools-devel", "qt6-qtimageformats", "qt6-qtsvg",
-      "wayland-devel", "wayland-protocols-devel", "libxcb-devel",
-      "vulkan-headers", "spirv-tools", "cli11-devel",
-      "libqalculate-devel", "pipewire-devel", "aubio-devel", "lm_sensors-devel",
-      "fftw-devel", "jemalloc-devel", "libdrm-devel", "mesa-libgbm-devel",
-      "polkit-devel", "libunwind-devel", "libdwarf-devel", "binutils-devel",
-      "pam-devel", "xkeyboard-config", "iniparser-devel",
-      "fontconfig", "lua", "python3-devel", "python3-pip",
-      "ffmpeg-free-devel", "libX11-devel", "libXcomposite-devel",
-      "libXrandr-devel", "libXfixes-devel", "libXdamage-devel",
-      "pulseaudio-libs-devel", "libva-devel", "libcap-devel"
+      "git",
+      "gcc",
+      "gcc-c++",
+      "clang",
+      "cmake",
+      "ninja-build",
+      "pkgconf-pkg-config",
+      "meson",
+      "autoconf",
+      "automake",
+      "libtool",
+      "patch",
+      "golang",
+      "qt6-qtbase-devel",
+      "qt6-qtbase-private-devel",
+      "qt6-qtdeclarative-devel",
+      "qt6-qtshadertools-devel",
+      "qt6-qtimageformats",
+      "qt6-qtsvg",
+      "wayland-devel",
+      "wayland-protocols-devel",
+      "libxcb-devel",
+      "vulkan-headers",
+      "spirv-tools",
+      "cli11-devel",
+      "libqalculate-devel",
+      "pipewire-devel",
+      "aubio-devel",
+      "lm_sensors-devel",
+      "fftw-devel",
+      "jemalloc-devel",
+      "libdrm-devel",
+      "mesa-libgbm-devel",
+      "polkit-devel",
+      "libunwind-devel",
+      "libdwarf-devel",
+      "binutils-devel",
+      "pam-devel",
+      "xkeyboard-config",
+      "iniparser-devel",
+      "fontconfig",
+      "lua",
+      "python3-devel",
+      "python3-pip",
+      "ffmpeg-free-devel",
+      "libX11-devel",
+      "libXcomposite-devel",
+      "libXrandr-devel",
+      "libXfixes-devel",
+      "libXdamage-devel",
+      "pulseaudio-libs-devel",
+      "libva-devel",
+      "libcap-devel"
     ],
     "_no_dart": "Dart is deliberately NOT installed: no Dart SDK is packaged for Fedora 44 and bootstrapping one from source is a multi-hour chicken-and-egg build. dart-sass is consumed as the official Sass-team release binary pinned against GitHub's first-party sha256 digest."
   }

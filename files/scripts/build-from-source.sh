@@ -25,16 +25,36 @@ tar_pin() {  # url sha256 dir
 }
 
 git_pin "https://github.com/caelestia-dots/cli" "ff8cae38bd4bea8d1827a0a6971d6763d58c570e" caelestia-cli
+git_pin "https://github.com/caelestia-dots/caelestia" "f4bb062cc3c617f0fa16525a365097c9e4684d83" caelestia-dots
 git_pin "https://github.com/caelestia-dots/shell" "a3a8fe59aba2c0048ab02dc817748678f96076ff" caelestia-shell
-git_pin "https://github.com/jesseduffield/lazygit" "a0fa1becdb18edf438867aa21e052f26bcb6e7bc" lazygit
+git_pin "https://github.com/jesseduffield/lazygit" "4c2ce238a925c41b6caee6dcf722984ff081774b" lazygit
 git_pin "https://github.com/LukashonakV/cava" "f03278ef9e5e7948fb206453d2f02758f8db216c" libcava
 git_pin "https://github.com/soramanew/m3shapes" "8a6fe8961749887d677700b6508e0c9249968b7e" m3shapes
+git_pin "https://github.com/google/material-design-icons" "49d4db35df873165d6bd6ba09b063c7dafbac2f4" material-symbols
 git_pin "https://git.outfoxxed.me/quickshell/quickshell" "4f508be500dea6e5732cc3d50382a0048b17e7b1" quickshell
 git_pin "https://github.com/googlefonts/rubik" "e337a5f69a9bea30e58d05bd40184d79cc099628" rubik
+tar_pin "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz" "ae598e9401e2846aa3ee364513715de0490b844a4b54f0768991f45f23aa8369" cascadia-code-nerd
 tar_pin "https://github.com/sass/dart-sass/releases/download/1.105.1/dart-sass-1.105.1-linux-x64.tar.gz" "9046fdd4a31a524a0020298c55d9e155d4c22363ef268e8992574335a72c6a6f" dart-sass
 tar_pin "https://dec05eba.com/snapshot/gpu-screen-recorder.git.5.12.3.tar.gz" "66b483f910a71d0b3320ca9a87cf8b16f97ca0db1dab324184c7c5a876203bdd" gpu-screen-recorder
+tar_pin "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.tar.xz" "04d5e8f903693f9dd13e16f867e994834e681eb3c72c0d337a770dcda09010cf" jetbrains-mono-nerd
 
-# --- 1. libcava (meson) ------------------------------------------------------
+# --- 1. fonts ---------------------------------------------------------------
+# caelestia-shell resolves its icon family as "Material Symbols Rounded" and
+# its mono family as "CaskaydiaCove NF". Without them every icon renders as
+# its literal ligature text (clear_day, arrow_forward, ...) instead of glyphs.
+echo "################ fonts ################"
+install -d /usr/share/fonts/material-symbols /usr/share/fonts/nerd
+install -m 0644 "$SRC/material-symbols/variablefont/MaterialSymbolsRounded"[FILL,GRAD,opsz,wght].ttf \
+  /usr/share/fonts/material-symbols/
+install -m 0644 "$SRC"/cascadia-code-nerd/extracted/*.ttf /usr/share/fonts/nerd/
+install -m 0644 "$SRC"/jetbrains-mono-nerd/extracted/*.ttf /usr/share/fonts/nerd/
+fc-cache -f
+fc-match "Material Symbols Rounded" | grep -q "Material Symbols Rounded" \
+  || { echo "!!! Material Symbols Rounded did not register"; exit 1; }
+fc-match "CaskaydiaCove NF" | grep -qi "caskaydia" \
+  || { echo "!!! CaskaydiaCove NF did not register"; exit 1; }
+
+# --- 2. libcava (meson) ------------------------------------------------------
 cd "$SRC/libcava"
 meson setup -Dbuild_target=lib -Dcava_font=false --prefix=/usr build
 meson compile -C build
@@ -106,6 +126,18 @@ cp -a "$SRC/dart-sass/extracted/dart-sass" /opt/dart-sass
 chmod +x /opt/dart-sass/sass /opt/dart-sass/src/dart
 /opt/dart-sass/sass --version
 
+# --- 9. caelestia dots ------------------------------------------------------
+# The image must carry the dots itself: the builder stage is the only place
+# they exist in CI, and firstboot has to deploy them from the image. Without
+# this, ~/.config/hypr is never created and starthyprland falls back to a
+# /usr/share/hyprland/hyprland.lua that does not exist, which locks the user
+# out of SDDM entirely.
+echo "################ dots ################"
+install -d /usr/share/caelestia/dots
+cp -a "$SRC/caelestia-dots/hypr" /usr/share/caelestia/dots/
+[ -f /usr/share/caelestia/dots/hypr/hyprland.lua ] \
+  || { echo "!!! dots missing hyprland.lua"; exit 1; }
+
 # --- stage runtime artefacts -------------------------------------------------
 # Only what the final image actually runs. Build headers, static archives,
 # cmake/pkgconfig exports and the toolchain itself stay behind.
@@ -133,7 +165,10 @@ for a in \
     /usr/share/gpu-screen-recorder \
     /usr/share/fonts/rubik \
     /etc/xdg/quickshell/caelestia \
-    /opt/dart-sass ; do
+    /opt/dart-sass \
+    /usr/share/fonts/material-symbols \
+    /usr/share/fonts/nerd \
+    /usr/share/caelestia/dots ; do
   stage_path "$a"
 done
 

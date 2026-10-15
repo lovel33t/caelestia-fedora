@@ -600,7 +600,18 @@ fi
 
 rm -rf "$WORK" && mkdir -p "$WORK" && cp -a "$SRC"/. "$WORK"/ && SRC="$WORK"
 
-step "1/7 libcava"
+step "1/8 fonts"
+# caelestia-shell resolves its icon family as "Material Symbols Rounded" and its
+# mono family as "CaskaydiaCove NF". Without them the icons render as their
+# literal ligature text (clear_day, arrow_forward, ...) instead of glyphs.
+install -d /usr/share/fonts/material-symbols /usr/share/fonts/nerd
+install -m 0644 "$SRC/material-symbols/variablefont/MaterialSymbolsRounded"[FILL,GRAD,opsz,wght].ttf \
+  /usr/share/fonts/material-symbols/
+install -m 0644 "$SRC"/cascadia-code-nerd/extracted/*.ttf /usr/share/fonts/nerd/
+install -m 0644 "$SRC"/jetbrains-mono-nerd/extracted/*.ttf /usr/share/fonts/nerd/
+fc-cache -f
+
+step "2/8 libcava"
 cd "$SRC/libcava"
 meson setup -Dbuild_target=lib -Dcava_font=false --prefix=/usr build >/dev/null
 meson compile -C build >/dev/null; DESTDIR= meson install -C build >/dev/null
@@ -699,7 +710,7 @@ if [ -d "$SRC/dart-sass/extracted/dart-sass" ]; then
   rm -rf /opt/dart-sass
   cp -a "$SRC/dart-sass/extracted/dart-sass" /opt/dart-sass
   chmod +x /opt/dart-sass/sass /opt/dart-sass/src/dart
-  ln -sf /opt/dart-sass/sass /usr/local/bin/sass
+  ln -sf /opt/dart-sass/sass /usr/bin/sass
   /usr/local/bin/sass --version || { echo "!! sass failed to run"; exit 1; }
 else
   echo "!! dart-sass: extracted/dart-sass directory not found"; exit 1
@@ -887,11 +898,17 @@ COPY --from=builder /usr/bin/gpu-screen-recorder /usr/bin/gpu-screen-recorder
 COPY --from=builder /usr/bin/gsr-kms-server /usr/bin/gsr-kms-server
 COPY --from=builder /usr/share/gpu-screen-recorder /usr/share/gpu-screen-recorder
 COPY --from=builder /opt/dart-sass /opt/dart-sass
-RUN mkdir -p /var/usrlocal/bin \\
- && ln -sf /opt/dart-sass/sass /var/usrlocal/bin/sass
+# /usr/local is a symlink to /var/usrlocal and bootc does NOT commit /var, so
+# anything installed or symlinked under /usr/local is silently discarded when
+# the image is committed to ostree. Put the launcher on /usr/bin instead.
+RUN ln -sf /opt/dart-sass/sass /usr/bin/sass
 
 # Rubik font (used by the shell clock and workspaces)
 COPY --from=builder /usr/share/fonts/rubik /usr/share/fonts/rubik
+COPY --from=builder /usr/share/fonts/material-symbols /usr/share/fonts/material-symbols
+COPY --from=builder /usr/share/fonts/nerd /usr/share/fonts/nerd
+COPY --from=builder /usr/share/caelestia/dots /usr/share/caelestia/dots
+RUN fc-cache -f
 
 # Caelestia CLI: reinstall the wheel so pip resolves deps for this image
 COPY --from=builder /caelestia-wheel /tmp/caelestia-wheel
@@ -1019,7 +1036,23 @@ tar_pin() {  # url sha256 dir
 
 __FETCH__
 
-# --- 1. libcava (meson) ------------------------------------------------------
+# --- 1. fonts ---------------------------------------------------------------
+# caelestia-shell resolves its icon family as "Material Symbols Rounded" and
+# its mono family as "CaskaydiaCove NF". Without them every icon renders as
+# its literal ligature text (clear_day, arrow_forward, ...) instead of glyphs.
+echo "################ fonts ################"
+install -d /usr/share/fonts/material-symbols /usr/share/fonts/nerd
+install -m 0644 "$SRC/material-symbols/variablefont/MaterialSymbolsRounded"[FILL,GRAD,opsz,wght].ttf \
+  /usr/share/fonts/material-symbols/
+install -m 0644 "$SRC"/cascadia-code-nerd/extracted/*.ttf /usr/share/fonts/nerd/
+install -m 0644 "$SRC"/jetbrains-mono-nerd/extracted/*.ttf /usr/share/fonts/nerd/
+fc-cache -f
+fc-match "Material Symbols Rounded" | grep -q "Material Symbols Rounded" \
+  || { echo "!!! Material Symbols Rounded did not register"; exit 1; }
+fc-match "CaskaydiaCove NF" | grep -qi "caskaydia" \
+  || { echo "!!! CaskaydiaCove NF did not register"; exit 1; }
+
+# --- 2. libcava (meson) ------------------------------------------------------
 cd "$SRC/libcava"
 meson setup -Dbuild_target=lib -Dcava_font=false --prefix=/usr build
 meson compile -C build
@@ -1091,6 +1124,18 @@ cp -a "$SRC/dart-sass/extracted/dart-sass" /opt/dart-sass
 chmod +x /opt/dart-sass/sass /opt/dart-sass/src/dart
 /opt/dart-sass/sass --version
 
+# --- 9. caelestia dots ------------------------------------------------------
+# The image must carry the dots itself: the builder stage is the only place
+# they exist in CI, and firstboot has to deploy them from the image. Without
+# this, ~/.config/hypr is never created and starthyprland falls back to a
+# /usr/share/hyprland/hyprland.lua that does not exist, which locks the user
+# out of SDDM entirely.
+echo "################ dots ################"
+install -d /usr/share/caelestia/dots
+cp -a "$SRC/caelestia-dots/hypr" /usr/share/caelestia/dots/
+[ -f /usr/share/caelestia/dots/hypr/hyprland.lua ] \
+  || { echo "!!! dots missing hyprland.lua"; exit 1; }
+
 # --- stage runtime artefacts -------------------------------------------------
 # Only what the final image actually runs. Build headers, static archives,
 # cmake/pkgconfig exports and the toolchain itself stay behind.
@@ -1118,7 +1163,10 @@ for a in \
     /usr/share/gpu-screen-recorder \
     /usr/share/fonts/rubik \
     /etc/xdg/quickshell/caelestia \
-    /opt/dart-sass ; do
+    /opt/dart-sass \
+    /usr/share/fonts/material-symbols \
+    /usr/share/fonts/nerd \
+    /usr/share/caelestia/dots ; do
   stage_path "$a"
 done
 
@@ -1130,11 +1178,11 @@ echo "ALL BUILDS OK"
 
 def render_stage_script(lock: dict, deps: str) -> str:
     """Fill the stage script template with the locked revisions."""
-    # Resolved and audited, but never compiled into the image: the dots are
-    # only used by `build.py validate` for byte-parity, and qtengine/darkly
-    # are referenced by the CLI's config but are not runtime artefacts of the
-    # image (the validated Containerfile copies neither).
-    skip = {"caelestia-dots", "qtengine", "darkly"}
+    # qtengine and darkly are resolved and audited but never compiled: they are
+    # not runtime artefacts of the image (the Containerfile copies neither).
+    # caelestia-dots IS needed - it is shipped at /usr/share/caelestia/dots so
+    # firstboot can deploy it.
+    skip = {"qtengine", "darkly"}
 
     fetch = []
     for name, meta in sorted(lock.get("git", {}).items()):
@@ -1246,12 +1294,15 @@ modules:
   - type: script
     snippets:
       - ln -sf quickshell /usr/bin/qs
-      - mkdir -p /var/usrlocal/bin && ln -sf /opt/dart-sass/sass /var/usrlocal/bin/sass
+      - ln -sf /opt/dart-sass/sass /usr/bin/sass
+      # --prefix=/usr because /usr/local -> /var/usrlocal and bootc does not
+      # commit /var: a default pip install lands there and vanishes on commit.
       - >-
         dnf install -y python3-pip >/dev/null 2>&1 &&
-        pip3 install --no-cache-dir /tmp/caelestia-wheel/*.whl >/dev/null 2>&1 &&
+        pip3 install --no-cache-dir --prefix=/usr /tmp/caelestia-wheel/*.whl >/dev/null 2>&1 &&
         rm -rf /tmp/caelestia-wheel &&
-        python3 -c "import caelestia"
+        python3 -c "import caelestia" &&
+        fc-cache -f
 
   # 5. caelestia wrapper, udev rules, zsh defaults, skel seeding
   # `source` is relative to the repo's files/ directory (BlueBuild docs), so
@@ -1266,6 +1317,12 @@ modules:
 
   # 6. Keep caelestia shell + CLI on PATH after deploy
   - type: systemd
+    system:
+      enabled:
+        # Without this the unit ships but never runs, so the dots are never
+        # deployed and SDDM locks the user out: starthyprland falls back to
+        # /usr/share/hyprland/hyprland.lua, which does not exist.
+        - caelestia-firstboot.service
     user:
       enabled:
         - caelestia-shell.service
