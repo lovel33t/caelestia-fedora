@@ -331,5 +331,6 @@
     ],
     "_no_dart": "Dart is deliberately NOT installed: no Dart SDK is packaged for Fedora 44 and bootstrapping one from source is a multi-hour chicken-and-egg build. dart-sass is consumed as the official Sass-team release binary pinned against GitHub's first-party sha256 digest."
   },
-  "base_image_version": "44"
+  "base_image_version": "44",
+  "image_name": "caelestia-fedora-hyprland"
 }
