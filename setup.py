@@ -199,6 +199,15 @@ jobs:
           # Value is the cosign private key (repo secret SIGNING_SECRET);
           # cosign.pub is committed at the repo root for verification.
           cosign_private_key: ${{ secrets.SIGNING_SECRET }}
+          # Same inputs wayblue uses. squash matters: without it no new
+          # ostree commit is produced and rpm-ostree rebase is a no-op.
+          squash: true
+          build_chunked_oci: true
+          max_layers: 128
+          maximize_build_space: true
+          retry_push_count: 3
+          use_cache: false
+          cli_version: v0.9.37
 """
 
 BLUEPRINT = """\
