@@ -26,7 +26,13 @@ readonly FULLNAME="${CAELESTIA_FULLNAME:-Caelestia User}"
 readonly LOGIN_SHELL="${CAELESTIA_SHELL:-/usr/bin/zsh}"
 readonly MARKER=/var/lib/caelestia/provisioned
 
-[ -f "$MARKER" ] && { echo "already provisioned"; exit 0; }
+# Provisioning is idempotent: re-run on every boot. The old version exited
+# here when the marker existed, which is why an image update never reached
+# machines that had already booted once - the passwordless sudoers drop-in
+# from the earlier image survived forever.
+if [ -f "$MARKER" ]; then
+    echo "==> already provisioned; re-applying account settings"
+fi
 
 # Standard sudo for the primary user: wheel group, password required.
 # Passwordless sudo was here before and was a security problem.
@@ -91,7 +97,7 @@ done
 # exists and otherwise falls back to /usr/share/hyprland/hyprland.lua, which is
 # NOT shipped. With neither present Hyprland exits instantly and SDDM appears
 # to reject the password.
-if [ ! -f "$HOME_DIR/.config/hypr/hyprland.lua" ] && [ -d /usr/share/caelestia/dots/hypr ]; then
+if [ ! -f "$MARKER" ] && [ ! -f "$HOME_DIR/.config/hypr/hyprland.lua" ] && [ -d /usr/share/caelestia/dots/hypr ]; then
     echo "==> deploying hyprland dots"
     install -d -m 0755 -o "$USERNAME" -g "$USERNAME" "$HOME_DIR/.config/hypr"
     cp -a /usr/share/caelestia/dots/hypr/. "$HOME_DIR/.config/hypr/"
