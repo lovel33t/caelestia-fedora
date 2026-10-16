@@ -152,8 +152,14 @@ fi
 
 # The image policy (ostree-image-signed) still enforces signature checks; this
 # per-remote flag only stops ostree demanding GPG for the container ref itself.
+#
+# There is no rpm-ostree-upgrade.timer on Fedora Atomic (verified: the shipped
+# units are rpm-ostree-countme, rpm-ostree-bootstatus, rpm-ostreed-automatic),
+# so enabling one silently did nothing. caelestia-upgrade.timer ships with the
+# image and does the same job.
 if command -v systemctl >/dev/null 2>&1; then
-    systemctl enable --now rpm-ostree-upgrade.timer 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl enable --now caelestia-upgrade.timer 2>/dev/null || true
     systemctl enable --now rpm-ostreed-automatic.timer 2>/dev/null || true
 fi
 

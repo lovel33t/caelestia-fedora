@@ -22,12 +22,56 @@ jobs:
       contents: read
       packages: write
       id-token: write
+    # Without this, two runs can overlap and the slower one can overwrite
+    # :latest last, leaving users upgrading to a stale image. Cancelling the
+    # in-progress run guarantees the newest commit owns the tag.
+    concurrency:
+      group: caelestia-image-build
+      cancel-in-progress: true
     env:
       IMAGE_NAME: caelestia-fedora
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Follow Fedora releases without a manual bump. wayblue publishes its own
+      # image as <name>:<image-version>, so when Fedora 45 lands there will be
+      # a :45 tag and this bumps packages.json to match.
+      #
+      # This probes for CURRENT+1 rather than listing tags: the registry
+      # paginates at 1000 and wayblue has far more than that, so a tag listing
+      # does not even contain :44 and would "bump" us backwards to :42.
+      # Probing one version ahead can only ever move forward.
+      - name: Follow the base image version
+        run: |
+          set -euo pipefail
+          REPO=wayblueorg/hyprland-nvidia-open
+          TOKEN=$(curl -sS "https://ghcr.io/token?scope=repository:$REPO:pull&service=ghcr.io" | jq -r .token)
+          have_tag() {
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $TOKEN" \
+              -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json' \
+              "https://ghcr.io/v2/$REPO/manifests/$1")
+            [ "$code" = "200" ]
+          }
+          CUR=$(jq -r '.base_image_version' config/packages.json)
+          V=$((CUR + 1)); BUMPED=""
+          for _ in 1 2 3 4 5; do
+            if have_tag "$V"; then BUMPED="$V"; V=$((V + 1)); else break; fi
+          done
+          if [ -n "$BUMPED" ]; then
+            echo "::notice::Base image has Fedora $BUMPED (was $CUR); following it."
+            jq --arg v "$BUMPED" '.base_image_version = $v' config/packages.json > p.tmp
+            mv p.tmp config/packages.json
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add config/packages.json
+            git commit -m "Follow base image to Fedora $BUMPED (automated)"
+            git push
+          else
+            echo "Base image still on Fedora $CUR; nothing to follow."
+          fi
 
       - name: Log in to ghcr.io
         uses: docker/login-action@v3
