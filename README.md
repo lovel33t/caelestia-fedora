@@ -108,8 +108,10 @@ caelestia-update --status
 The image layers these on every deployment, through `files/etc/ostree/prepare-root.d/00-caelestia-layering.sh`:
 
 ```
-e2fsprogs  util-linux  gdisk  smartmontools  nvim
+e2fsprogs  util-linux  gdisk  smartmontools  neovim
 ```
+
+Those are Fedora package names, not command names. There is no `nvim` package; the editor is `neovim`.
 
 Layering is how a package survives a rebase. `rpm-ostree install foo` adds a package to the running deployment only, and it is gone after the next update. Anything in `prepare-root.d` is reapplied on every deployment.
 
