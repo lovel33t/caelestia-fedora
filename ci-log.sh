@@ -20,11 +20,16 @@ echo "== runs =="
 run_json "$API/runs?per_page=5" > /tmp/opencode/ci-runs.json
 python3 - <<'PY'
 import json, datetime
+now = datetime.datetime.now(datetime.timezone.utc)
 for r in json.load(open('/tmp/opencode/ci-runs.json'))['workflow_runs']:
     c = datetime.datetime.fromisoformat(r['created_at'].replace('Z', '+00:00'))
-    u = datetime.datetime.fromisoformat(r['updated_at'].replace('Z', '+00:00'))
+    if r['status'] == 'completed':
+        u = datetime.datetime.fromisoformat(r['updated_at'].replace('Z', '+00:00'))
+        dur = str(u - c)[:7]
+    else:
+        dur = str(now - c)[:7] + ' (running)'
     print("  {}  {}  {:11} {:9} dur={}".format(
-        r['id'], r['head_sha'][:7], r['status'], str(r['conclusion']), str(u - c)[:7]))
+        r['id'], r['head_sha'][:7], r['status'], str(r['conclusion']), dur))
 PY
 
 RUN_ID="${1:-$(python3 -c "import json;print(json.load(open('/tmp/opencode/ci-runs.json'))['workflow_runs'][0]['id'])")}"

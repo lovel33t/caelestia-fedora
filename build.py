@@ -750,10 +750,10 @@ if [ -d "$SRC/dart-sass/extracted/dart-sass" ]; then
   # dart-sass ships a `sass` launcher that execs "$dir/src/dart" with
   # "$dir/src/sass.snapshot". Copying only the launcher breaks it, so the whole
   # directory must be installed intact and symlinked onto PATH.
-  rm -rf /opt/dart-sass
-  cp -a "$SRC/dart-sass/extracted/dart-sass" /opt/dart-sass
-  chmod +x /opt/dart-sass/sass /opt/dart-sass/src/dart
-  ln -sf /opt/dart-sass/sass /usr/bin/sass
+  rm -rf /usr/lib/dart-sass
+  cp -a "$SRC/dart-sass/extracted/dart-sass" /usr/lib/dart-sass
+  chmod +x /usr/lib/dart-sass/sass /usr/lib/dart-sass/src/dart
+  ln -sf /usr/lib/dart-sass/sass /usr/bin/sass
   /usr/local/bin/sass --version || { echo "!! sass failed to run"; exit 1; }
 else
   echo "!! dart-sass: extracted/dart-sass directory not found"; exit 1
@@ -940,11 +940,11 @@ COPY --from=builder /usr/bin/lazygit /usr/bin/lazygit
 COPY --from=builder /usr/bin/gpu-screen-recorder /usr/bin/gpu-screen-recorder
 COPY --from=builder /usr/bin/gsr-kms-server /usr/bin/gsr-kms-server
 COPY --from=builder /usr/share/gpu-screen-recorder /usr/share/gpu-screen-recorder
-COPY --from=builder /opt/dart-sass /opt/dart-sass
+COPY --from=builder /usr/lib/dart-sass /usr/lib/dart-sass
 # /usr/local is a symlink to /var/usrlocal and bootc does NOT commit /var, so
 # anything installed or symlinked under /usr/local is silently discarded when
 # the image is committed to ostree. Put the launcher on /usr/bin instead.
-RUN ln -sf /opt/dart-sass/sass /usr/bin/sass
+RUN ln -sf /usr/lib/dart-sass/sass /usr/bin/sass
 
 # Rubik font (used by the shell clock and workspaces)
 COPY --from=builder /usr/share/fonts/rubik /usr/share/fonts/rubik
@@ -1210,10 +1210,10 @@ fc-cache -f /usr/share/fonts/rubik
 # --- 9. dart-sass (official release binary) ----------------------------------
 # No Dart SDK is packaged for Fedora 44; GitHub publishes a first-party sha256
 # digest for the asset, which tar_pin already verified.
-rm -rf /opt/dart-sass
-cp -a "$SRC/dart-sass/extracted/dart-sass" /opt/dart-sass
-chmod +x /opt/dart-sass/sass /opt/dart-sass/src/dart
-/opt/dart-sass/sass --version
+rm -rf /usr/lib/dart-sass
+cp -a "$SRC/dart-sass/extracted/dart-sass" /usr/lib/dart-sass
+chmod +x /usr/lib/dart-sass/sass /usr/lib/dart-sass/src/dart
+/usr/lib/dart-sass/sass --version
 
 # --- 9. caelestia dots ------------------------------------------------------
 # The image must carry the dots itself: the builder stage is the only place
@@ -1254,7 +1254,7 @@ for a in \
     /usr/share/gpu-screen-recorder \
     /usr/share/fonts/rubik \
     /etc/xdg/quickshell/caelestia \
-    /opt/dart-sass \
+    /usr/lib/dart-sass \
     /usr/share/icons/Bibata-Modern-Ice \
     /usr/share/fonts/material-symbols \
     /usr/share/fonts/nerd \
@@ -1269,6 +1269,13 @@ done
 
 echo "STAGED:"
 find "$OUT" -maxdepth 3 -mindepth 1 | sort
+
+# Guard against the atomic symlink trap: /usr/local -> /var/usrlocal and
+# /opt -> /var/opt, and bootc does NOT commit /var. Anything staged under those
+# paths is silently discarded at commit time, so refuse to stage there.
+for a in $OUT/usr/local $OUT/opt $OUT/var ; do
+  [ -e "$a" ] && { echo "!!! refusing to stage $a: /usr/local, /opt and /var are not committed by bootc"; exit 1; }
+done
 echo "ALL BUILDS OK"
 """
 
@@ -1394,7 +1401,7 @@ modules:
   - type: script
     snippets:
       - ln -sf quickshell /usr/bin/qs
-      - ln -sf /opt/dart-sass/sass /usr/bin/sass
+      - ln -sf /usr/lib/dart-sass/sass /usr/bin/sass
       # --prefix=/usr because /usr/local -> /var/usrlocal and bootc does not
       # commit /var: a default pip install lands there and vanishes on commit.
       - >-

@@ -119,7 +119,7 @@ modules:
   - type: script
     snippets:
       - ln -sf quickshell /usr/bin/qs
-      - ln -sf /opt/dart-sass/sass /usr/bin/sass
+      - ln -sf /usr/lib/dart-sass/sass /usr/bin/sass
       # --prefix=/usr because /usr/local -> /var/usrlocal and bootc does not
       # commit /var: a default pip install lands there and vanishes on commit.
       - >-
