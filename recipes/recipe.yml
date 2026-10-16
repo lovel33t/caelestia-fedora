@@ -138,6 +138,20 @@ modules:
         destination: /usr
       - source: etc
         destination: /etc
+      - source: scripts
+        destination: /usr/lib/caelestia-scripts
+
+  # 5b. The firstboot unit runs /usr/bin/caelestia-firstboot. Nothing created
+  # that path, so the service died with status=203/EXEC on every boot and no
+  # provisioning ever happened - no zsh, no dots, no wallpaper, no remote.
+  - type: script
+    snippets:
+      - >-
+        install -m 0755 /usr/lib/caelestia-scripts/firstboot-setup.sh
+        /usr/bin/caelestia-firstboot &&
+        install -d -m 0755 /etc/skel &&
+        cp -a /usr/lib/caelestia-scripts/firstboot-setup.sh
+        /etc/skel/.caelestia-firstboot
 
   # 6. Keep caelestia shell + CLI on PATH after deploy
   - type: systemd

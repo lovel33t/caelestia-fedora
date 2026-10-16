@@ -951,6 +951,10 @@ COPY --from=builder /usr/share/fonts/rubik /usr/share/fonts/rubik
 COPY --from=builder /usr/share/fonts/material-symbols /usr/share/fonts/material-symbols
 COPY --from=builder /usr/share/fonts/nerd /usr/share/fonts/nerd
 COPY --from=builder /usr/share/caelestia/dots /usr/share/caelestia/dots
+COPY files/scripts/ /usr/lib/caelestia-scripts/
+# The firstboot unit runs /usr/bin/caelestia-firstboot; nothing created that
+# path, so it died with status=203/EXEC and no provisioning ever happened.
+RUN install -m 0755 /usr/lib/caelestia-scripts/firstboot-setup.sh /usr/bin/caelestia-firstboot
 COPY --from=builder /usr/share/icons/Bibata-Modern-Ice /usr/share/icons/Bibata-Modern-Ice
 # qtengine + darkly: not packaged for Fedora 44, built from source.
 COPY --from=builder /usr/lib64/qt6/plugins/platformthemes/ /usr/lib64/qt6/plugins/platformthemes/
@@ -1423,6 +1427,20 @@ modules:
         destination: /usr
       - source: etc
         destination: /etc
+      - source: scripts
+        destination: /usr/lib/caelestia-scripts
+
+  # 5b. The firstboot unit runs /usr/bin/caelestia-firstboot. Nothing created
+  # that path, so the service died with status=203/EXEC on every boot and no
+  # provisioning ever happened - no zsh, no dots, no wallpaper, no remote.
+  - type: script
+    snippets:
+      - >-
+        install -m 0755 /usr/lib/caelestia-scripts/firstboot-setup.sh
+        /usr/bin/caelestia-firstboot &&
+        install -d -m 0755 /etc/skel &&
+        cp -a /usr/lib/caelestia-scripts/firstboot-setup.sh
+        /etc/skel/.caelestia-firstboot
 
   # 6. Keep caelestia shell + CLI on PATH after deploy
   - type: systemd
