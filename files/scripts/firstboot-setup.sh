@@ -6,34 +6,27 @@
 
 set -euo pipefail
 
-readonly USERNAME="${CAELESTIA_USERNAME:-neo}"
+# ---------------------------------------------------------------------------
+# The primary account already exists: you installed Silverblue or Kinoite and
+# chose a username before rebasing onto this image. Nothing here creates a
+# user. CAELESTIA_USERNAME overrides which account gets provisioned.
+# ---------------------------------------------------------------------------
+if [ -z "${USERNAME:-}" ]; then
+    USERNAME="$(getent passwd \
+        | awk -F: '$3>=1000 && $3<65534 && $1!="rpm-ostree" {print $1; exit}')"
+fi
+
+if [ -z "$USERNAME" ] || ! id -u "$USERNAME" >/dev/null 2>&1; then
+    echo "!!! no regular user account found; nothing to provision" >&2
+    exit 1
+fi
+
+readonly USERNAME
 readonly FULLNAME="${CAELESTIA_FULLNAME:-Caelestia User}"
 readonly LOGIN_SHELL="${CAELESTIA_SHELL:-/usr/bin/zsh}"
 readonly MARKER=/var/lib/caelestia/provisioned
 
 [ -f "$MARKER" ] && { echo "already provisioned"; exit 0; }
-
-if ! id -u "$USERNAME" >/dev/null 2>&1; then
-    echo "==> creating user $USERNAME"
-    useradd -m -G wheel,video,render,input,uinput,networkmanager,bluetooth \
-            -s "$LOGIN_SHELL" -c "$FULLNAME" "$USERNAME"
-    # wheel -> passwordless sudo via the sudoers drop-in below
-    install -d -m 0700 -o "$USERNAME" -g "$USERNAME" "/home/$USERNAME/.ssh"
-
-    # Generate an SSH keypair so the account is usable immediately.
-    sudo -u "$USERNAME" ssh-keygen -q -t ed25519 -N '' \
-        -f "/home/$USERNAME/.ssh/id_ed25519" 2>/dev/null || true
-
-    # Seed the Caelestia dotfiles into the account's XDG config.
-    echo "==> seeding /home/$USERNAME/.config"
-    install -d -m 0755 -o "$USERNAME" -g "$USERNAME" "/home/$USERNAME/.config"
-
-    # Star the version-controlled files so system upgrades cannot clobber them.
-    if [ -d /etc/caelestia-dots ]; then
-        install -d -m 0755 -o "$USERNAME" -g "$USERNAME" "/home/$USERNAME/.local/state/caelestia"
-        echo "/etc/caelestia-dots" > "/home/$USERNAME/.local/state/caelestia/dots-path"
-    fi
-fi
 
 # Passwordless sudo for the primary user.
 install -d -m 0750 -o root -g wheel /etc/sudoers.d
@@ -41,12 +34,15 @@ printf 'Defaults:%s !requiretty\n%s ALL=(ALL) NOPASSWD: ALL\n' "$USERNAME" "$USE
     > "/etc/sudoers.d/90-$USERNAME"
 chmod 0440 "/etc/sudoers.d/90-$USERNAME"
 
-# zsh as the default shell for anyone created later by the display manager.
-# It must also be listed in /etc/shells or the display manager treats it as a
-# non-login shell and the session falls back to bash.
+# zsh as the login shell. usermod rather than chsh: chsh validates against
+# /etc/shells and comes from util-linux, so it silently no-ops when either is
+# missing. Keep the /etc/shells entry anyway for the display manager.
 grep -qxF "$LOGIN_SHELL" /etc/shells 2>/dev/null || \
     printf '%s\n' "$LOGIN_SHELL" >> /etc/shells
-chsh -l "$USERNAME" -s "$LOGIN_SHELL" 2>/dev/null || true
+usermod -s "$LOGIN_SHELL" "$USERNAME" 2>/dev/null \
+    || chsh -l "$USERNAME" -s "$LOGIN_SHELL" 2>/dev/null || true
+getent passwd "$USERNAME" | grep -q ":$LOGIN_SHELL$" \
+    || echo "!!! warning: login shell for $USERNAME is still $(getent passwd "$USERNAME" | cut -d: -f7)"
 
 # polkit-gnome no longer exists in Fedora 44, but the dots exec its agent by
 # that exact path. Give them hyprpolkitagent under the name they expect.

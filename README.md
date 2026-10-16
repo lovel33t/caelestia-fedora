@@ -90,13 +90,9 @@ sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/lovel33t/caelestia-f
 sudo systemctl reboot
 ```
 
-The first boot creates the user `neo`, sets zsh as the login shell, deploys the dots, seeds a wallpaper and enables the daily update timer. It runs once, guarded by `/var/lib/caelestia/provisioned`.
+The first boot provisions the account you already have. You installed Silverblue or Kinoite and chose a username before rebasing, so nothing here creates a user. It sets zsh as the login shell, grants that account passwordless sudo, deploys the dots, seeds a wallpaper, and enables the daily update timer. It runs once, guarded by `/var/lib/caelestia/provisioned`.
 
-Set a password for `neo` before the first graphical login if you want one. The account has passwordless sudo:
-
-```bash
-sudo passwd neo
-```
+To provision a different account, set `CAELESTIA_USERNAME` for `caelestia-firstboot.service` in a drop-in.
 
 For a card that needs the closed NVIDIA module, this image will not work. See GPU support above.
 
@@ -106,6 +102,18 @@ Check what you ended up with:
 rpm-ostree status
 caelestia-update --status
 ```
+
+## Layered packages
+
+The image layers these on every deployment, through `files/etc/ostree/prepare-root.d/00-caelestia-layering.sh`:
+
+```
+e2fsprogs  util-linux  gdisk  smartmontools  nvim
+```
+
+Layering is how a package survives a rebase. `rpm-ostree install foo` adds a package to the running deployment only, and it is gone after the next update. Anything in `prepare-root.d` is reapplied on every deployment.
+
+Add more by editing that script, not by installing them by hand.
 
 ## Verifying a release
 
