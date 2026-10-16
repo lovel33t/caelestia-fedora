@@ -717,13 +717,17 @@ DESTDIR= meson install -C build
 # enabled Fedora 44 repo, so both are built from source.
 if [ ! -d "$SRC/qtengine" ]; then echo "!!! qtengine source missing"; exit 1; fi
 cd "$SRC/qtengine"
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+# BUILD_QT5 defaults to ON in both projects, but Fedora 44 ships no Qt5 (EOL),
+# so find_package(Qt5 5.15) fails and aborts the whole configure.
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+      -DBUILD_QT5=OFF -DBUILD_QT6=ON
 cmake --build build -j "$(nproc)"
 DESTDIR= cmake --install build
 
 if [ ! -d "$SRC/darkly" ]; then echo "!!! darkly source missing"; exit 1; fi
 cd "$SRC/darkly"
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+      -DBUILD_QT5=OFF -DBUILD_QT6=ON
 cmake --build build -j "$(nproc)"
 DESTDIR= cmake --install build
 
@@ -1169,13 +1173,18 @@ DESTDIR= meson install -C build
 # exists in any enabled Fedora 44 repo, so both are built from source.
 echo "################ qtengine ################"
 cd "$SRC/qtengine"
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+# BUILD_QT5 defaults to ON in both qtengine and darkly, but Fedora 44 ships no
+# Qt5 at all (it is EOL), so the Qt5 subdirectory fails find_package(Qt5 5.15)
+# and takes the whole configure down with it.
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+      -DBUILD_QT5=OFF -DBUILD_QT6=ON
 cmake --build build -j "$(nproc)"
 DESTDIR= cmake --install build
 
 echo "################ darkly ################"
 cd "$SRC/darkly"
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+      -DBUILD_QT5=OFF -DBUILD_QT6=ON
 cmake --build build -j "$(nproc)"
 DESTDIR= cmake --install build
 

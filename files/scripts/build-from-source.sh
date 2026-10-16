@@ -5,7 +5,7 @@ SRC=/src; OUT=/out
 mkdir -p "$SRC" "$OUT"
 
 echo "################ build deps ################"
-dnf -y install --setopt=install_weak_deps=False git gcc gcc-c++ clang cmake ninja-build pkgconf-pkg-config meson autoconf automake libtool patch golang qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtimageformats qt6-qtsvg wayland-devel wayland-protocols-devel libxcb-devel vulkan-headers spirv-tools cli11-devel libqalculate-devel pipewire-devel aubio-devel lm_sensors-devel fftw-devel jemalloc-devel libdrm-devel mesa-libgbm-devel polkit-devel libunwind-devel libdwarf-devel binutils-devel pam-devel xkeyboard-config iniparser-devel fontconfig lua python3-devel python3-pip ffmpeg-free-devel libX11-devel libXcomposite-devel libXrandr-devel libXfixes-devel libXdamage-devel pulseaudio-libs-devel libva-devel libcap-devel extra-cmake-modules ca-certificates
+dnf -y install --setopt=install_weak_deps=False git gcc gcc-c++ clang cmake ninja-build pkgconf-pkg-config meson autoconf automake libtool patch golang qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtimageformats qt6-qtsvg wayland-devel wayland-protocols-devel libxcb-devel vulkan-headers spirv-tools cli11-devel libqalculate-devel pipewire-devel aubio-devel lm_sensors-devel fftw-devel jemalloc-devel libdrm-devel mesa-libgbm-devel polkit-devel libunwind-devel libdwarf-devel binutils-devel pam-devel xkeyboard-config iniparser-devel fontconfig lua python3-devel python3-pip ffmpeg-free-devel libX11-devel libXcomposite-devel libXrandr-devel libXfixes-devel libXdamage-devel pulseaudio-libs-devel libva-devel libcap-devel extra-cmake-modules kf6-kconfig-devel kf6-kcolorscheme-devel kf6-kiconthemes-devel kf6-kconfigwidgets-devel kf6-ki18n-devel kf6-kcoreaddons-devel kf6-kguiaddons-devel kf6-kwindowsystem-devel kf6-kirigami-devel kf6-kcmutils-devel kf6-frameworkintegration-devel kdecoration-devel ca-certificates
 
 # --- pinned fetch ------------------------------------------------------------
 # Every source is pinned to an exact revision from deps.lock.json. A tarball
@@ -131,13 +131,18 @@ DESTDIR= meson install -C build
 # exists in any enabled Fedora 44 repo, so both are built from source.
 echo "################ qtengine ################"
 cd "$SRC/qtengine"
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+# BUILD_QT5 defaults to ON in both qtengine and darkly, but Fedora 44 ships no
+# Qt5 at all (it is EOL), so the Qt5 subdirectory fails find_package(Qt5 5.15)
+# and takes the whole configure down with it.
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+      -DBUILD_QT5=OFF -DBUILD_QT6=ON
 cmake --build build -j "$(nproc)"
 DESTDIR= cmake --install build
 
 echo "################ darkly ################"
 cd "$SRC/darkly"
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+      -DBUILD_QT5=OFF -DBUILD_QT6=ON
 cmake --build build -j "$(nproc)"
 DESTDIR= cmake --install build
 

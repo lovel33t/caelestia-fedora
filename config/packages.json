@@ -311,7 +311,19 @@
       "pulseaudio-libs-devel",
       "libva-devel",
       "libcap-devel",
-      "extra-cmake-modules"
+      "extra-cmake-modules",
+      "kf6-kconfig-devel",
+      "kf6-kcolorscheme-devel",
+      "kf6-kiconthemes-devel",
+      "kf6-kconfigwidgets-devel",
+      "kf6-ki18n-devel",
+      "kf6-kcoreaddons-devel",
+      "kf6-kguiaddons-devel",
+      "kf6-kwindowsystem-devel",
+      "kf6-kirigami-devel",
+      "kf6-kcmutils-devel",
+      "kf6-frameworkintegration-devel",
+      "kdecoration-devel"
     ],
     "_no_dart": "Dart is deliberately NOT installed: no Dart SDK is packaged for Fedora 44 and bootstrapping one from source is a multi-hour chicken-and-egg build. dart-sass is consumed as the official Sass-team release binary pinned against GitHub's first-party sha256 digest."
   }
