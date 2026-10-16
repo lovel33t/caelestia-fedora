@@ -192,6 +192,10 @@
     {
       "pkg": "geoclue2",
       "note": "the dots exec /usr/lib/geoclue-2.0/demos/agent for location services."
+    },
+    {
+      "pkg": "pavucontrol",
+      "note": "Volume control for the Ctrl+Alt+V bind. pwvucontrol (upstream's choice) does not exist in Fedora 44; pavucontrol does and is the equivalent PulseAudio/PipeWire mixer."
     }
   ],
   "already_in_base": [

@@ -951,6 +951,7 @@ COPY --from=builder /usr/share/fonts/rubik /usr/share/fonts/rubik
 COPY --from=builder /usr/share/fonts/material-symbols /usr/share/fonts/material-symbols
 COPY --from=builder /usr/share/fonts/nerd /usr/share/fonts/nerd
 COPY --from=builder /usr/share/caelestia/dots /usr/share/caelestia/dots
+COPY --from=builder /usr/share/icons/Bibata-Modern-Ice /usr/share/icons/Bibata-Modern-Ice
 # qtengine + darkly: not packaged for Fedora 44, built from source.
 COPY --from=builder /usr/lib64/qt6/plugins/platformthemes/ /usr/lib64/qt6/plugins/platformthemes/
 COPY --from=builder /usr/share/themes/ /usr/share/themes/
@@ -1110,6 +1111,17 @@ fc-match "Material Symbols Rounded" | grep -q "Material Symbols Rounded" \
 fc-match "CaskaydiaCove NF" | grep -qi "caskaydia" \
   || { echo "!!! CaskaydiaCove NF did not register"; exit 1; }
 
+echo "################ cursor ################"
+# Bibata is not packaged for Fedora. The archive holds a single
+# Bibata-Modern-Ice/ dir with cursors/, cursor.theme and index.theme, so it
+# installs straight into /usr/share/icons.
+install -d /usr/share/icons
+rm -rf /usr/share/icons/Bibata-Modern-Ice
+cp -a "$SRC/bibata-cursor/extracted/Bibata-Modern-Ice" /usr/share/icons/
+[ -f /usr/share/icons/Bibata-Modern-Ice/index.theme ] \
+  || { echo "!!! bibata cursor theme did not install"; exit 1; }
+ls /usr/share/icons/Bibata-Modern-Ice/cursors | wc -l
+
 # --- 2. libcava (meson) ------------------------------------------------------
 cd "$SRC/libcava"
 meson setup -Dbuild_target=lib -Dcava_font=false --prefix=/usr build
@@ -1243,6 +1255,7 @@ for a in \
     /usr/share/fonts/rubik \
     /etc/xdg/quickshell/caelestia \
     /opt/dart-sass \
+    /usr/share/icons/Bibata-Modern-Ice \
     /usr/share/fonts/material-symbols \
     /usr/share/fonts/nerd \
     /usr/share/caelestia/dots ; do
@@ -1250,7 +1263,7 @@ for a in \
 done
 
 # qtengine and darkly install into these trees; stage whichever ones exist.
-for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes ; do
+for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes /usr/share/icons/Bibata-Modern-Ice ; do
   [ -e "$a" ] && stage_path "$a"
 done
 

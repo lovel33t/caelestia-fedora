@@ -204,6 +204,18 @@
         "JetBrainsMono Nerd Font"
       ],
       "note": "Upstream's manifest requires ttf-jetbrains-mono-nerd; Fedora's jetbrains-mono-fonts is the plain cut. Pinned by the archive's sha256."
+    },
+    {
+      "name": "bibata-cursor",
+      "url": "https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.7/Bibata-Modern-Ice.tar.xz",
+      "version": "2.0.7",
+      "sha256": "a68cae60c4dc706350e194ebc91c5fe48bc7bc9d59e119555834a2a7ee5078ef",
+      "license": "MIT",
+      "build": "prebuilt-cursor",
+      "provides": [
+        "Bibata-Modern-Ice"
+      ],
+      "note": "Not packaged for Fedora (bibata-cursor-theme is absent from every enabled repo). Upstream publishes per-platform archives: the -Windows.zip variants are for Windows, the plain .tar.xz is the Linux/XCursor build. Extracts to a single Bibata-Modern-Ice/ dir holding cursors/, cursor.theme and index.theme, so it installs to /usr/share/icons/Bibata-Modern-Ice."
     }
   ],
   "origin_allowlist": [

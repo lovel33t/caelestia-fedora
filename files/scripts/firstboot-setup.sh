@@ -55,10 +55,9 @@ if [ -x /usr/bin/hyprpolkitagent ] && [ ! -e /usr/lib/polkit-gnome/polkit-gnome-
     ln -sf /usr/bin/hyprpolkitagent /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 fi
 
-# Bibata is not packaged for Fedora 44, so default to Breeze, which breeze-icon-
-# theme ships in both light and dark. The dots also call `hyprctl setcursor`
-# from variables.lua; the gsettings keys below cover GTK/Qt apps.
-CURSOR_THEME="${CAELESTIA_CURSOR:-breeze}"
+# Bibata is not packaged for Fedora, so the image ships it from the upstream
+# release instead. It installs to /usr/share/icons/Bibata-Modern-Ice.
+CURSOR_THEME="${CAELESTIA_CURSOR:-Bibata-Modern-Ice}"
 
 # --- provisioning that must also run for a PRE-EXISTING account -------------
 # The original version did all of this inside the useradd branch, so an account
@@ -74,6 +73,17 @@ install -d -m 0755 -o "$USERNAME" -g "$USERNAME" "$HOME_DIR/.config"
 # directory is missing, so the require throws, Hyprland drops into emergency
 # mode and registers NO keybinds, no animations and no theme.
 install -d -m 0755 -o "$USERNAME" -g "$USERNAME" "$HOME_DIR/.config/caelestia"
+# The dots default cursorTheme to "sweet-cursors", which is not shipped, so
+# hyprctl setcursor silently fails and XWayland/Qt apps get no cursor. hypr-
+# vars.lua is the documented override point and is never touched by updates.
+if [ ! -f "$HOME_DIR/.config/caelestia/hypr-vars.lua" ]; then
+    cat > "$HOME_DIR/.config/caelestia/hypr-vars.lua" <<EOF
+return {
+    cursorTheme = "$CURSOR_THEME",
+    cursorSize  = 24,
+}
+EOF
+fi
 for f in hypr-vars.lua hypr-user.lua; do
     [ -f "$HOME_DIR/.config/caelestia/$f" ] || \
         printf 'return {}\n' > "$HOME_DIR/.config/caelestia/$f"
@@ -109,6 +119,11 @@ if [ ! -f "$HOME_DIR/.config/caelestia/shell.json" ]; then
     },
     "paths": {
         "wallpaperDir": "~/Pictures/Wallpapers"
+    },
+    "general": {
+        "apps": {
+            "audio": ["pavucontrol"]
+        }
     },
     "appearance": {
         "transparency": {

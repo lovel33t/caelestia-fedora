@@ -47,8 +47,9 @@ git_pin "https://github.com/google/material-design-icons" "49d4db35df873165d6bd6
 git_pin "https://github.com/kossLAN/qtengine" "1a8b9c5fd7ab695c71b1ac236953491088e152fb" qtengine
 git_pin "https://git.outfoxxed.me/quickshell/quickshell" "4f508be500dea6e5732cc3d50382a0048b17e7b1" quickshell
 git_pin "https://github.com/googlefonts/rubik" "e337a5f69a9bea30e58d05bd40184d79cc099628" rubik
+tar_pin "https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.7/Bibata-Modern-Ice.tar.xz" "a68cae60c4dc706350e194ebc91c5fe48bc7bc9d59e119555834a2a7ee5078ef" bibata-cursor
 tar_pin "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz" "ae598e9401e2846aa3ee364513715de0490b844a4b54f0768991f45f23aa8369" cascadia-code-nerd
-tar_pin "https://github.com/sass/dart-sass/releases/download/1.105.1/dart-sass-1.105.1-linux-x64.tar.gz" "9046fdd4a31a524a0020298c55d9e155d4c22363ef268e8992574335a72c6a6f" dart-sass
+tar_pin "https://github.com/sass/dart-sass/releases/download/1.105.2/dart-sass-1.105.2-linux-x64.tar.gz" "a530ee08d5792c80bdb9d9614b45fb58219c890cb42a280a80775f0af9c29582" dart-sass
 tar_pin "https://dec05eba.com/snapshot/gpu-screen-recorder.git.5.12.3.tar.gz" "66b483f910a71d0b3320ca9a87cf8b16f97ca0db1dab324184c7c5a876203bdd" gpu-screen-recorder
 tar_pin "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.tar.xz" "04d5e8f903693f9dd13e16f867e994834e681eb3c72c0d337a770dcda09010cf" jetbrains-mono-nerd
 
@@ -67,6 +68,17 @@ fc-match "Material Symbols Rounded" | grep -q "Material Symbols Rounded" \
   || { echo "!!! Material Symbols Rounded did not register"; exit 1; }
 fc-match "CaskaydiaCove NF" | grep -qi "caskaydia" \
   || { echo "!!! CaskaydiaCove NF did not register"; exit 1; }
+
+echo "################ cursor ################"
+# Bibata is not packaged for Fedora. The archive holds a single
+# Bibata-Modern-Ice/ dir with cursors/, cursor.theme and index.theme, so it
+# installs straight into /usr/share/icons.
+install -d /usr/share/icons
+rm -rf /usr/share/icons/Bibata-Modern-Ice
+cp -a "$SRC/bibata-cursor/extracted/Bibata-Modern-Ice" /usr/share/icons/
+[ -f /usr/share/icons/Bibata-Modern-Ice/index.theme ] \
+  || { echo "!!! bibata cursor theme did not install"; exit 1; }
+ls /usr/share/icons/Bibata-Modern-Ice/cursors | wc -l
 
 # --- 2. libcava (meson) ------------------------------------------------------
 cd "$SRC/libcava"
@@ -201,6 +213,7 @@ for a in \
     /usr/share/fonts/rubik \
     /etc/xdg/quickshell/caelestia \
     /opt/dart-sass \
+    /usr/share/icons/Bibata-Modern-Ice \
     /usr/share/fonts/material-symbols \
     /usr/share/fonts/nerd \
     /usr/share/caelestia/dots ; do
@@ -208,7 +221,7 @@ for a in \
 done
 
 # qtengine and darkly install into these trees; stage whichever ones exist.
-for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes ; do
+for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes /usr/share/icons/Bibata-Modern-Ice ; do
   [ -e "$a" ] && stage_path "$a"
 done
 

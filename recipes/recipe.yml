@@ -87,6 +87,7 @@ modules:
         - ffmpeg-free
         - hyprpolkitagent
         - geoclue2
+        - pavucontrol
 
   # 2. Strip wayblue's waybar config + Hyprland lua: caelestia provides its own
   - type: script
