@@ -19,8 +19,8 @@ The single most important consequence of BlueBuild: **it derives the registry pa
 
 | Branch | Base image | Published to |
 |---|---|---|
-| `main` | `ghcr.io/wayblueorg/hyprland-nvidia-open` | `ghcr.io/<owner>/caelestia-fedora` |
-| `hyprland` | `ghcr.io/wayblueorg/hyprland` | `ghcr.io/<owner>/caelestia-fedora-hyprland` |
+| `main` | `ghcr.io/wayblueorg/hyprland-nvidia-open` | `ghcr.io/lovel33t/caelestia-fedora` |
+| `hyprland` | `ghcr.io/wayblueorg/hyprland` | `ghcr.io/lovel33t/caelestia-fedora-hyprland` |
 
 Both are built by the same workflow file, kept in sync on purpose. The only differences between them are `base_image`, `base_image_version` and `image_name` in `config/packages.json`, plus the image name and remote in `.github/workflows/build.yml` and `files/scripts/firstboot-setup.sh`.
 
@@ -72,11 +72,46 @@ It needs a fine-grained token with `Actions: Read-only` and `Contents: Read-only
 
 The build publishes `latest` plus an immutable `<commit>-44` tag. Prefer the pinned tag when you need to be certain which build you got.
 
+## Installing
+
+Start from a normal Fedora Silverblue or other Atomic install, then rebase onto this image.
+
+Rebase to the unsigned image first. This installs the signing policy the signed image needs:
+
+```bash
+sudo rpm-ostree rebase ostree-unverified-registry:ghcr.io/lovel33t/caelestia-fedora:latest
+sudo systemctl reboot
+```
+
+Then rebase to the signed image:
+
+```bash
+sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/lovel33t/caelestia-fedora:latest
+sudo systemctl reboot
+```
+
+The first boot creates the user `neo`, sets zsh as the login shell, deploys the dots, seeds a wallpaper and enables the daily update timer. It runs once, guarded by `/var/lib/caelestia/provisioned`.
+
+Set a password for `neo` before the first graphical login if you want one. The account has passwordless sudo:
+
+```bash
+sudo passwd neo
+```
+
+For a card that needs the closed NVIDIA module, this image will not work. See GPU support above.
+
+Check what you ended up with:
+
+```bash
+rpm-ostree status
+caelestia-update --status
+```
+
 ## Verifying a release
 
 ```bash
 cosign verify --key cosign.pub \
-  ostree-image-signed:docker://ghcr.io/<owner>/caelestia-fedora:latest
+  ostree-image-signed:docker://ghcr.io/lovel33t/caelestia-fedora:latest
 ```
 
 `cosign.pub` is committed at the repo root. The private key never enters the repo and is stored as the `SIGNING_SECRET` GitHub Actions secret.
