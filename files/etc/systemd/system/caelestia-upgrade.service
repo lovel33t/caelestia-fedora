@@ -1,15 +1,17 @@
 [Unit]
-Description=Caelestia automatic OSTree update
+Description=Check for Caelestia OSTree updates daily
 Documentation=https://github.com/lovel33t/caelestia-fedora
-# The remote is written by caelestia-firstboot.service; if it is missing there
-# is nothing to pull from and this unit would fail on every run.
+# The remote is written by caelestia-firstboot.service; without it there is
+# nothing to pull from and this unit would fail on every run.
 ConditionPathExists=/etc/ostree/remotes.d/caelestia.conf
 After=network-online.target rpm-ostreed.service
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/rpm-ostree upgrade -r
-# A failed update must not wedge the timer; it will retry at the next window.
+# No -r: an unattended reboot could interrupt work. The update is staged and
+# you reboot when convenient; `rpm-ostree status` shows what is pending.
+ExecStart=/usr/bin/rpm-ostree upgrade
+# A failed update must not wedge the timer; it retries at the next window.
 SuccessExitStatus=0 70
 TimeoutStartSec=1800

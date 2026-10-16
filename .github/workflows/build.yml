@@ -46,7 +46,9 @@ jobs:
       - name: Follow the base image version
         run: |
           set -euo pipefail
-          REPO=wayblueorg/hyprland-nvidia-open
+          # Read the base repo from the manifest so switching wayblue variants
+          # (nvidia-open -> plain hyprland, for example) needs no edit here.
+          REPO=$(jq -r '.base_image | sub("^ghcr.io/"; "") | sub(":.*$"; "")' config/packages.json)
           TOKEN=$(curl -sS "https://ghcr.io/token?scope=repository:$REPO:pull&service=ghcr.io" | jq -r .token)
           have_tag() {
             code=$(curl -sS -o /dev/null -w '%{http_code}' \

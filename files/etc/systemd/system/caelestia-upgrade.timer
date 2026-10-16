@@ -1,12 +1,13 @@
 [Unit]
-Description=Check for Caelestia OSTree updates twice a day
+Description=Daily check for Caelestia OSTree updates
 Documentation=https://github.com/lovel33t/caelestia-fedora
 
 [Timer]
-OnCalendar=*-*-* 04,16:30:00
+# 00:00 local time - systemd's OnCalendar is local, not UTC.
+OnCalendar=*-*-* 00:00:00
 # Catch up after the machine has been off, without hammering the registry.
 Persistent=true
-RandomizedDelaySec=30m
+RandomizedDelaySec=20m
 
 [Install]
 WantedBy=timers.target
