@@ -95,16 +95,15 @@ modules:
       - apply-wayblue-overrides.sh
 
   # 3. Runtime artefacts from the builder stage. /out mirrors the final
-  #    filesystem, so these four recursive copies replace the ~20 individual
+  #    filesystem, so these recursive copies replace the ~20 individual
   #    COPY --from=builder lines the generated Containerfile used.
+  #    There is deliberately no /out/opt copy: dart-sass installs to
+  #    /usr/lib/dart-sass because /opt is a symlink to /var/opt, which bootc
+  #    does not commit. Copying an empty /out/opt fails the build outright.
   - type: copy
     from: caelestia-builder
     src: /out/usr
     dest: /usr
-  - type: copy
-    from: caelestia-builder
-    src: /out/opt
-    dest: /opt
   - type: copy
     from: caelestia-builder
     src: /out/etc
