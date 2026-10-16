@@ -11,10 +11,13 @@ set -euo pipefail
 # chose a username before rebasing onto this image. Nothing here creates a
 # user. CAELESTIA_USERNAME overrides which account gets provisioned.
 # ---------------------------------------------------------------------------
-if [ -z "${USERNAME:-}" ]; then
-    USERNAME="$(getent passwd \
+# CAELESTIA_USERNAME overrides which account gets provisioned; otherwise
+# discover the first regular user account. Nothing here creates a user.
+if [ -z "${CAELESTIA_USERNAME:-}" ]; then
+    CAELESTIA_USERNAME="$(getent passwd \
         | awk -F: '$3>=1000 && $3<65534 && $1!="rpm-ostree" {print $1; exit}')"
 fi
+USERNAME="$CAELESTIA_USERNAME"
 
 if [ -z "$USERNAME" ] || ! id -u "$USERNAME" >/dev/null 2>&1; then
     echo "!!! no regular user account found; nothing to provision" >&2
