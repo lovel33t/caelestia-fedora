@@ -222,7 +222,7 @@ done
 
 # qtengine and darkly install into these trees; stage whichever ones exist.
 for a in /usr/lib64/qt6/plugins/platformthemes /usr/share/themes /usr/share/icons/Bibata-Modern-Ice ; do
-  [ -e "$a" ] && stage_path "$a"
+  if [ -e "$a" ]; then stage_path "$a"; fi
 done
 
 echo "STAGED:"
@@ -232,6 +232,9 @@ find "$OUT" -maxdepth 3 -mindepth 1 | sort
 # /opt -> /var/opt, and bootc does NOT commit /var. Anything staged under those
 # paths is silently discarded at commit time, so refuse to stage there.
 for a in $OUT/usr/local $OUT/opt $OUT/var ; do
-  [ -e "$a" ] && { echo "!!! refusing to stage $a: /usr/local, /opt and /var are not committed by bootc"; exit 1; }
+  if [ -e "$a" ]; then
+    echo "!!! refusing to stage $a: /usr/local, /opt and /var are not committed by bootc"
+    exit 1
+  fi
 done
 echo "ALL BUILDS OK"
