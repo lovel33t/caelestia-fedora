@@ -47,18 +47,44 @@ current_digest() {
         | jq -r '.deployments[0]["container-image-reference-digest"] // empty'
 }
 
-# Digest of the tag the remote points at. Uses a HEAD on the manifest, so
-# nothing is downloaded; ghcr answers with Docker-Content-Digest.
-remote_digest() {
-    local token
-    token=$(curl -sS --retry 3 "https://ghcr.io/token?scope=repository:$NAMESPACE/$NAME:pull&service=ghcr.io" \
-            | jq -r '.token // empty')
+# An image ref resolves to a multi-arch index, whose digest is NOT what gets
+# deployed: rpm-ostree picks the child matching this machine and records THAT
+# digest. Comparing the deployed digest against the index would report a
+# spurious update every single run. So we resolve the index down to the
+# platform child first, and show both digests so the difference is obvious.
+ARCH="$(uname -m)"
+case "$ARCH" in
+    x86_64)  GOARCH=amd64; GOOS=linux ;;
+    aarch64) GOARCH=arm64; GOOS=linux ;;
+    *)       GOARCH="$ARCH"; GOOS=linux ;;
+esac
+
+ghcr_token() {
+    curl -sS --retry 3 \
+        "https://ghcr.io/token?scope=repository:$NAMESPACE/$NAME:pull&service=ghcr.io" \
+        | jq -r '.token // empty'
+}
+
+ACCEPT='application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json'
+
+# Prints: "<index-digest> <platform-digest>"; platform may equal the index.
+remote_digests() {
+    local token index child
+    token=$(ghcr_token)
     [ -n "$token" ] || return 1
-    curl -sSI --retry 3 \
-        -H "Authorization: Bearer $token" \
-        -H 'Accept: application/vnd.oci.image.index.v1+json' \
+
+    index=$(curl -sSI --retry 3 -H "Authorization: Bearer $token" -H "Accept: $ACCEPT" \
         "https://ghcr.io/v2/$NAMESPACE/$NAME/manifests/latest" \
-        | tr -d '\r' | awk 'tolower($1)=="docker-content-digest:" {print $2}'
+        | tr -d '\r' | awk 'tolower($1)=="docker-content-digest:" {print $2}')
+    [ -n "$index" ] || return 1
+
+    # A single-arch image is already the platform manifest.
+    child=$(curl -sS --retry 3 -H "Authorization: Bearer $token" -H "Accept: $ACCEPT" \
+        "https://ghcr.io/v2/$NAMESPACE/$NAME/manifests/$index" 2>/dev/null \
+        | jq -r --arg a "$GOARCH" --arg o "$GOOS" \
+            '[.manifests[]? | select(.platform.os == $o and .platform.architecture == $a) | .digest][0] // empty' 2>/dev/null)
+
+    printf '%s %s\n' "$index" "${child:-$index}"
 }
 
 deployed_version() {
@@ -67,27 +93,29 @@ deployed_version() {
 }
 
 info "image   : $NAMESPACE/$NAME"
-info "deployed: $(deployed_version)"
 
 if [ "$STATUS_ONLY" = 1 ]; then
-    info "digest : $(current_digest)"
+    info "version : $(deployed_version)"
+    info "deployed: $(current_digest)"
     exit 0
 fi
 
-REMOTE=$(remote_digest) || die "could not reach the registry for $NAMESPACE/$NAME"
+read -r INDEX_DIGEST REMOTE <<<"$(remote_digests || true)"
+[ -n "$REMOTE" ] || die "could not reach the registry for $NAMESPACE/$NAME"
 CURRENT=$(current_digest)
+[ -n "$CURRENT" ] || die "could not determine the deployed image digest"
 
-if [ -z "$CURRENT" ]; then
-    die "could not determine the deployed image digest"
-fi
+info "version : $(deployed_version)"
+info "index   : $INDEX_DIGEST   (what the tag points at)"
+info "platform: $REMOTE   ($GOOS/$GOARCH - what is actually deployed)"
+info "deployed: $CURRENT"
 
+# Compare platform-to-platform. The index digest is informational only.
 if [ "$REMOTE" = "$CURRENT" ]; then
-    info "up to date ($CURRENT)"
+    info "up to date"
     exit 0
 fi
 
-info "current : $CURRENT"
-info "available: $REMOTE"
 info "an update is available"
 
 if [ "$CHECK_ONLY" = 1 ]; then
