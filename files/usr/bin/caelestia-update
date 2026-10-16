@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# caelestia-update - check for and apply updates to this Caelestia image.
+#
+# It works out which image it is from the ostree remote that
+# caelestia-firstboot.service configured, so the same script is correct on
+# the NVIDIA image and on the non-NVIDIA one without being told which.
+#
+#   caelestia-update            check, and upgrade if something is newer
+#   caelestia-update --check    only report, never change anything
+#   caelestia-update --reboot   upgrade and reboot once staged
+#   caelestia-update --status   what is deployed right now
+set -euo pipefail
+
+REMOTE_CONF=/etc/ostree/remotes.d/caelestia.conf
+
+die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
+info() { printf '%s\n' "$*"; }
+
+CHECK_ONLY=0
+REBOOT=0
+STATUS_ONLY=0
+for arg in "$@"; do
+    case "$arg" in
+        --check)  CHECK_ONLY=1 ;;
+        --reboot) REBOOT=1 ;;
+        --status) STATUS_ONLY=1 ;;
+        -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+        *) die "unknown option: $arg" ;;
+    esac
+done
+
+[ -r "$REMOTE_CONF" ] || die "no ostree remote at $REMOTE_CONF - the image is not provisioned"
+
+# The remote already carries the right registry path for this variant, e.g.
+# ostree-image-signed:docker://ghcr.io/lovel33t/caelestia-fedora:latest
+URL=$(awk -F= '/^url=/ {sub(/^url=/,""); print; exit}' "$REMOTE_CONF")
+REF=${URL##*://}
+REPO_PATH=${REF%%:*}
+NAMESPACE=${REPO_PATH%%/*}
+NAME=${REPO_PATH#*/}
+
+[ -n "$NAME" ] || die "could not parse an image from $URL"
+
+# Digest of what is booted right now.
+current_digest() {
+    rpm-ostree status -b --json 2>/dev/null \
+        | jq -r '.deployments[0]["container-image-reference-digest"] // empty'
+}
+
+# Digest of the tag the remote points at. Uses a HEAD on the manifest, so
+# nothing is downloaded; ghcr answers with Docker-Content-Digest.
+remote_digest() {
+    local token
+    token=$(curl -sS --retry 3 "https://ghcr.io/token?scope=repository:$NAMESPACE/$NAME:pull&service=ghcr.io" \
+            | jq -r '.token // empty')
+    [ -n "$token" ] || return 1
+    curl -sSI --retry 3 \
+        -H "Authorization: Bearer $token" \
+        -H 'Accept: application/vnd.oci.image.index.v1+json' \
+        "https://ghcr.io/v2/$NAMESPACE/$NAME/manifests/latest" \
+        | tr -d '\r' | awk 'tolower($1)=="docker-content-digest:" {print $2}'
+}
+
+deployed_version() {
+    rpm-ostree status -b --json 2>/dev/null \
+        | jq -r '.deployments[0].version // "unknown"'
+}
+
+info "image   : $NAMESPACE/$NAME"
+info "deployed: $(deployed_version)"
+
+if [ "$STATUS_ONLY" = 1 ]; then
+    info "digest : $(current_digest)"
+    exit 0
+fi
+
+REMOTE=$(remote_digest) || die "could not reach the registry for $NAMESPACE/$NAME"
+CURRENT=$(current_digest)
+
+if [ -z "$CURRENT" ]; then
+    die "could not determine the deployed image digest"
+fi
+
+if [ "$REMOTE" = "$CURRENT" ]; then
+    info "up to date ($CURRENT)"
+    exit 0
+fi
+
+info "current : $CURRENT"
+info "available: $REMOTE"
+info "an update is available"
+
+if [ "$CHECK_ONLY" = 1 ]; then
+    exit 0
+fi
+
+# Nothing has been staged yet; `upgrade` resolves the remote and stages it.
+if rpm-ostree upgrade; then
+    info "staged. reboot to apply:"
+    info "  systemctl reboot"
+    if [ "$REBOOT" = 1 ]; then
+        info "rebooting..."
+        systemctl reboot
+    fi
+else
+    info "nothing to apply"
+    exit 1
+fi
