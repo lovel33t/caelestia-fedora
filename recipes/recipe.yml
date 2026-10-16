@@ -92,6 +92,11 @@ modules:
         - hyprpolkitagent
         - geoclue2
         - pavucontrol
+        - neovim
+        - gdisk
+        - smartmontools
+        - e2fsprogs
+        - util-linux
 
   # 2. Strip wayblue's waybar config + Hyprland lua: caelestia provides its own
   - type: script

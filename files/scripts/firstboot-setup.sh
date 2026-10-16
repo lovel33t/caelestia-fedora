@@ -28,9 +28,10 @@ readonly MARKER=/var/lib/caelestia/provisioned
 
 [ -f "$MARKER" ] && { echo "already provisioned"; exit 0; }
 
-# Passwordless sudo for the primary user.
+# Standard sudo for the primary user: wheel group, password required.
+# Passwordless sudo was here before and was a security problem.
 install -d -m 0750 -o root -g wheel /etc/sudoers.d
-printf 'Defaults:%s !requiretty\n%s ALL=(ALL) NOPASSWD: ALL\n' "$USERNAME" "$USERNAME" \
+printf 'Defaults:%s !requiretty\n%s ALL=(ALL) ALL\n' "$USERNAME" "$USERNAME" \
     > "/etc/sudoers.d/90-$USERNAME"
 chmod 0440 "/etc/sudoers.d/90-$USERNAME"
 

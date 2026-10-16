@@ -196,6 +196,26 @@
     {
       "pkg": "pavucontrol",
       "note": "Volume control for the Ctrl+Alt+V bind. pwvucontrol (upstream's choice) does not exist in Fedora 44; pavucontrol does and is the equivalent PulseAudio/PipeWire mixer."
+    },
+    {
+      "pkg": "neovim",
+      "note": "editor; `nvim` is not a Fedora package, it is `neovim`."
+    },
+    {
+      "pkg": "gdisk",
+      "note": "GPT partition tooling; not in the base image."
+    },
+    {
+      "pkg": "smartmontools",
+      "note": "disk health monitoring; not in the base image."
+    },
+    {
+      "pkg": "e2fsprogs",
+      "note": "ext filesystem tools; already in the base, listed for documentation."
+    },
+    {
+      "pkg": "util-linux",
+      "note": "core utilities; already in the base, listed for documentation."
     }
   ],
   "already_in_base": [
