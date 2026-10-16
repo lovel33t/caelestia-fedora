@@ -161,6 +161,10 @@ name: Build
   push:
     branches: [main, live]
     tags: ['v*']
+  # Weekly rebuild so the base image and the pinned upstream sources are
+  # refreshed on a schedule, not only on push.
+  schedule:
+    - cron: '17 4 * * 1'   # Mondays 04:17 UTC
   workflow_dispatch:
 
 jobs:
