@@ -7,7 +7,7 @@
 name: caelestia-fedora
 description: Caelestia shell + CLI on wayblue hyprland-nvidia-open
 
-base-image: ghcr.io/wayblueorg/hyprland-nvidia-open
+base-image: ghcr.io/wayblueorg/hyprland
 image-version: 44
 
 # The from-source components (quickshell, the caelestia shell + plugins, the

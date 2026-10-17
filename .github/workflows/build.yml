@@ -6,7 +6,7 @@ name: Build
 # workflow on GitHub.
 "on":
   push:
-    branches: [main, live]
+    branches: [main, live, hyprland]
     tags: ['v*']
   # Weekly rebuild so the base image (wayblue publishes :daily updates) and
   # our pinned upstream sources are refreshed on a schedule, not only on push.
@@ -26,10 +26,10 @@ jobs:
     # :latest last, leaving users upgrading to a stale image. Cancelling the
     # in-progress run guarantees the newest commit owns the tag.
     concurrency:
-      group: caelestia-image-build
+      group: caelestia-image-build-${{ github.ref }}
       cancel-in-progress: true
     env:
-      IMAGE_NAME: caelestia-fedora
+      IMAGE_NAME: caelestia-fedora-hyprland
 
     steps:
       - name: Checkout

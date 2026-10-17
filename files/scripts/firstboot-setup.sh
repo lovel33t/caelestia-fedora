@@ -172,7 +172,7 @@ fi
 # The image ships no ostree remote, so `rpm-ostree upgrade` has nothing to pull
 # from. Point one at the published image and turn on the daily timer so
 # upgrades arrive without the user doing anything.
-CAELESTIA_REF="${CAELESTIA_REF:-ostree-image-signed:docker://ghcr.io/lovel33t/caelestia-fedora:latest}"
+CAELESTIA_REF="${CAELESTIA_REF:-ostree-image-signed:docker://ghcr.io/lovel33t/caelestia-fedora-hyprland:latest}"
 if [ ! -f /etc/ostree/remotes.d/caelestia.conf ]; then
     install -d -m 0755 /etc/ostree/remotes.d
     printf '[caelestia]\nurl=%s\ngpg-verify=false\n' "$CAELESTIA_REF" \
