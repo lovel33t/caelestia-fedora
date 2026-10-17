@@ -100,7 +100,6 @@ modules:
         - ncdu
         - duf
         - syncthing
-        - v4l2loopback
 
   # 2. Strip wayblue's waybar config + Hyprland lua: caelestia provides its own
   - type: script

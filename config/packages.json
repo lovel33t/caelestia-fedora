@@ -228,10 +228,6 @@
     {
       "pkg": "syncthing",
       "note": "continuous file synchronization; layered here so it survives rebases."
-    },
-    {
-      "pkg": "v4l2loopback",
-      "note": "userspace utilities for the v4l2loopback virtual camera kernel module."
     }
   ],
   "already_in_base": [
