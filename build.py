@@ -1458,6 +1458,13 @@ modules:
       enabled:
         - caelestia-shell.service
 
+  # v4l2loopback as an akmod, built against the base image's kernel at
+  # image build time. kmod-v4l2loopback (a pre-built module) was tried
+  # first and is kernel-version-specific, so it breaks on every kernel bump.
+  - type: akmods
+    install:
+      - v4l2loopback
+
   - type: signing
 """
     out = ROOT / "recipes"

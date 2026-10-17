@@ -76,10 +76,10 @@ The build publishes `latest` plus an immutable `<commit>-44` tag. Prefer the pin
 
 Start from a normal Fedora Silverblue or other Atomic install, then rebase onto this image.
 
-Or, after installing Silverblue, run the installer that picks the right variant for your GPU:
+Or, after installing Silverblue, run the installer from GitHub:
 
 ```bash
-caelestia-install
+curl -fsSL https://raw.githubusercontent.com/lovel33t/caelestia-fedora/main/caelestia-install.sh | bash
 ```
 
 It checks that you are on Fedora Atomic, detects whether you have NVIDIA, AMD, or both, and picks the NVIDIA image when an NVIDIA GPU is present (assuming open-driver support: Turing or newer). On AMD-only machines it uses the default image. Use `--dry-run` to see the plan first.
