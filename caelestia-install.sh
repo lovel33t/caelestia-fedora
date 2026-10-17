@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# caelestia-install - rebase the current Fedora Atomic system onto a
-# Caelestia image, picking the right variant for the GPU.
+# caelestia-install - rebase a fresh Fedora Atomic system onto a Caelestia image.
 #
-#   caelestia-install            interactive: detect, confirm, rebase
-#   caelestia-install --dry-run  print the plan, do nothing
-#   caelestia-install --force    skip the confirmation
+# Run on a clean Fedora Silverblue/Kinoite install, BEFORE any rebase:
+#
+#   curl -fsSL https://raw.githubusercontent.com/lovel33t/caelestia-fedora/main/caelestia-install.sh | bash
+#
+# It checks that you are on Fedora Atomic, detects whether you have NVIDIA,
+# AMD, or both, and picks the right image. On NVIDIA it verifies open-driver
+# support (Turing or newer). On AMD it uses the default image. Dual-GPU
+# laptops (AMD + NVIDIA) assume NVIDIA.
 set -euo pipefail
 
 DRY_RUN=0
@@ -24,7 +28,6 @@ if ! command -v rpm-ostree >/dev/null 2>&1; then
 fi
 
 # --- GPU detection -----------------------------------------------------------
-# lspci is the most reliable signal before any driver is installed.
 NVIDIA=0; AMD=0
 if command -v lspci >/dev/null 2>&1; then
     lspci_out=$(lspci -nn 2>/dev/null || true)
@@ -32,18 +35,13 @@ if command -v lspci >/dev/null 2>&1; then
     echo "$lspci_out" | grep -qiE "amd|ati" && AMD=1
 fi
 
-# Dual-GPU laptops (Intel/AMD iGPU + NVIDIA dGPU): assume NVIDIA. The
-# nvidia-open image carries the dGPU path and works on hybrid setups.
+# Dual-GPU laptops (Intel/AMD iGPU + NVIDIA dGPU): assume NVIDIA.
 if [ "$NVIDIA" = 1 ] && [ "$AMD" = 1 ]; then
     echo "Dual GPU detected (AMD + NVIDIA). Assuming NVIDIA as the primary."
     AMD=0
 fi
 
 if [ "$NVIDIA" = 1 ]; then
-    # Open driver support: Turing (GTX 16xx / RTX 20xx) or newer.
-    # Older cards (GTX 10xx and below) need the closed module, which this
-    # image does not ship. We check the name, since nvidia-smi cannot run
-    # before the driver is installed.
     name=$(lspci 2>/dev/null | grep -i nvidia | head -1)
     if echo "$name" | grep -qiE "RTX|GTX 16|Quadro (RTX|T[0-9])|Tesla (T4|V100|A100)|A[0-9]{2,3}"; then
         IMAGE="caelestia-fedora"
@@ -76,4 +74,7 @@ if [ "$FORCE" != 1 ]; then
 fi
 
 sudo rpm-ostree rebase "ostree-unverified-registry:ghcr.io/lovel33t/$IMAGE:latest"
-sudo systemctl reboot
+echo "Reboot to complete the first rebase."
+echo "Then run again to switch to the signed image:"
+echo "  sudo rpm-ostree rebase $REG"
+echo "  sudo systemctl reboot"
