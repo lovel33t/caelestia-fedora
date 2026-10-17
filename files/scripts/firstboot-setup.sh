@@ -44,6 +44,18 @@ printf 'Defaults:%s !requiretty\n%s ALL=(ALL) ALL\n' "$USERNAME" "$USERNAME" \
     > "/etc/sudoers.d/90-$USERNAME"
 chmod 0440 "/etc/sudoers.d/90-$USERNAME"
 
+# The user already exists (you chose a username during the Silverblue
+# install), but it may not be in the groups Caelestia needs. The original
+# script only did this inside the useradd branch, so an existing account
+# got nothing - which is exactly how the uinput/input/evdev access was
+# missing. Create the groups that have no packaged group on Fedora.
+for g in input uinput; do
+    getent group "$g" >/dev/null 2>&1 || groupadd -r "$g" 2>/dev/null || true
+done
+for g in wheel video render input uinput networkmanager bluetooth; do
+    getent group "$g" >/dev/null 2>&1 || groupadd -r "$g" 2>/dev/null || true
+    usermod -aG "$g" "$USERNAME" 2>/dev/null || true
+done
 # zsh as the login shell. usermod rather than chsh: chsh validates against
 # /etc/shells and comes from util-linux, so it silently no-ops when either is
 # missing. Keep the /etc/shells entry anyway for the display manager.

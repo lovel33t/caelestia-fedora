@@ -216,6 +216,26 @@
     {
       "pkg": "util-linux",
       "note": "core utilities; already in the base, listed for documentation."
+    },
+    {
+      "pkg": "ncdu",
+      "note": "disk usage analyzer with a TUI; complements du/duf."
+    },
+    {
+      "pkg": "duf",
+      "note": "modern disk usage/free utility; nicer than df."
+    },
+    {
+      "pkg": "syncthing",
+      "note": "continuous file synchronization; layered here so it survives rebases."
+    },
+    {
+      "pkg": "v4l2loopback",
+      "note": "userspace utilities for the v4l2loopback virtual camera kernel module."
+    },
+    {
+      "pkg": "kmod-v4l2loopback",
+      "note": "pre-built v4l2loopback module matching the kernel shipped by the base image."
     }
   ],
   "already_in_base": [
