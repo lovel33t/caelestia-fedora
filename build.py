@@ -1458,12 +1458,21 @@ modules:
       enabled:
         - caelestia-shell.service
 
-  # v4l2loopback as an akmod, built against the base image's kernel at
-  # image build time. kmod-v4l2loopback (a pre-built module) was tried
-  # first and is kernel-version-specific, so it breaks on every kernel bump.
-  - type: akmods
-    install:
-      - v4l2loopback
+  # v4l2loopback kernel module, built against the base image's kernel.
+  # The akmods module does not work with non-Universal-Blue bases (it runs
+  # as root and akmods refuses), so we build it directly with make.
+  - type: script
+    snippets:
+      - >-
+        KVER=\$(rpm -q --qf '%{{VERSION}}-%{{RELEASE}}.%{{ARCH}}' kernel-core) &&
+        dnf install -y "kernel-devel-\$KVER" make gcc git >/dev/null 2>&1 &&
+        git clone --depth 1 https://github.com/umlaeute/v4l2loopback.git /tmp/v4l2loopback &&
+        cd /tmp/v4l2loopback &&
+        make -C "/lib/modules/\$KVER/build" M=\$(pwd) modules &&
+        make -C "/lib/modules/\$KVER/build" M=\$(pwd) modules_install &&
+        rm -rf /tmp/v4l2loopback &&
+        dnf remove -y "kernel-devel-\$KVER" make gcc git >/dev/null 2>&1 &&
+        depmod -a "\$KVER"
 
   - type: signing
 """
