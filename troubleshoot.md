@@ -53,11 +53,10 @@ rebases because `/etc` is writable and not part of the ostree commit.
 
 ```bash
 sudo rm -f /etc/sudoers.d/90-neo
-echo 'neo ALL=(ALL) ALL' | sudo tee /etc/sudoers.d/90-neo
+echo "$USER ALL=(ALL) ALL" | sudo tee /etc/sudoers.d/90-neo
 sudo chmod 0440 /etc/sudoers.d/90-neo
 ```
 
-Replace `neo` with your username.
 
 ## Dots not deployed
 
@@ -130,11 +129,10 @@ command grep -E "pattern" file
 ## Login shell is still bash
 
 ```bash
-sudo usermod -s /usr/bin/zsh neo
+sudo usermod -s /usr/bin/zsh $USER
 grep -qxF /usr/bin/zsh /etc/shells || echo /usr/bin/zsh | sudo tee -a /etc/shells
 ```
 
-Replace `neo` with your username.
 
 ## caelestia-install fails on GPU detection
 
