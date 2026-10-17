@@ -183,14 +183,14 @@ modules:
   - type: script
     snippets:
       - >-
-        KVER=\$(rpm -q --qf '%{VERSION}-%{RELEASE}.%{ARCH}' kernel-core) &&
-        dnf install -y "kernel-devel-\$KVER" make gcc git >/dev/null 2>&1 &&
+        KVER=$(rpm -q --qf '%{VERSION}-%{RELEASE}.%{ARCH}' kernel-core) &&
+        dnf install -y "kernel-devel-$KVER" make gcc git >/dev/null 2>&1 &&
         git clone --depth 1 https://github.com/umlaeute/v4l2loopback.git /tmp/v4l2loopback &&
         cd /tmp/v4l2loopback &&
-        make -C "/lib/modules/\$KVER/build" M=\$(pwd) modules &&
-        make -C "/lib/modules/\$KVER/build" M=\$(pwd) modules_install &&
+        make -C "/lib/modules/$KVER/build" M=$(pwd) modules &&
+        make -C "/lib/modules/$KVER/build" M=$(pwd) modules_install &&
         rm -rf /tmp/v4l2loopback &&
-        dnf remove -y "kernel-devel-\$KVER" make gcc git >/dev/null 2>&1 &&
-        depmod -a "\$KVER"
+        dnf remove -y "kernel-devel-$KVER" make gcc git >/dev/null 2>&1 &&
+        depmod -a "$KVER"
 
   - type: signing
