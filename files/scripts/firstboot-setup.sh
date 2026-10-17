@@ -48,10 +48,23 @@ chmod 0440 "/etc/sudoers.d/90-$USERNAME"
 # install), but it may not be in the groups Caelestia needs. The original
 # script only did this inside the useradd branch, so an existing account
 # got nothing - which is exactly how the uinput/input/evdev access was
-# missing. Create the groups that have no packaged group on Fedora.
-for g in input uinput; do
-    getent group "$g" >/dev/null 2>&1 || groupadd -r "$g" 2>/dev/null || true
+# missing.
+#
+# On Fedora Atomic, /etc/group is empty by design: groups live in
+# /usr/lib/group. usermod cannot find a group that is not in /etc/group,
+# so "usermod -aG input" silently fails. The workaround is to copy the
+# group definition from /usr/lib/group to /etc/group first. This is the
+# documented Silverblue approach.
+for g in input video render; do
+    if ! grep -q "^${g}:" /etc/group 2>/dev/null; then
+        grep "^${g}:" /usr/lib/group >> /etc/group 2>/dev/null || true
+    fi
 done
+# uinput has no packaged group, so create it in /etc/group directly.
+if ! grep -q "^uinput:" /etc/group 2>/dev/null; then
+    printf 'uinput:x:960:\n' >> /etc/group
+fi
+
 for g in wheel video render input uinput networkmanager bluetooth; do
     getent group "$g" >/dev/null 2>&1 || groupadd -r "$g" 2>/dev/null || true
     usermod -aG "$g" "$USERNAME" 2>/dev/null || true
