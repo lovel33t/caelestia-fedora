@@ -232,10 +232,6 @@
     {
       "pkg": "v4l2loopback",
       "note": "userspace utilities for the v4l2loopback virtual camera kernel module."
-    },
-    {
-      "pkg": "akmods",
-      "note": "builds v4l2loopback against the base image kernel at image build time, instead of shipping a pre-built kmod that breaks on every kernel bump."
     }
   ],
   "already_in_base": [
