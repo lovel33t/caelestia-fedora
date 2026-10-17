@@ -1,6 +1,6 @@
 {
   "_comment": "Fedora package map for the caelestia Hyprland image. Every entry was verified against a live Fedora 44 container on 2026-10-14. `build.py audit` re-verifies every one of these before the image is built.",
-  "base_image": "ghcr.io/wayblueorg/hyprland",
+  "base_image": "ghcr.io/wayblueorg/hyprland-nvidia-open",
   "fedora_release": "44",
   "cops": [
     {
